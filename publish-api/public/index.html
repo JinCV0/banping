@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <link rel="icon" href="favicon.ico" sizes="any">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <meta name="theme-color" content="#2f493c">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>班屏 · 老师端</title>
+  <link rel="stylesheet" href="app.css">
+</head>
+<body>
+  <!--
+    老师端 h5（v2）：三层导航（今日 / 课表 / 班级）+ 桌面端右侧常驻 16:9 预览。
+    这里只有骨架；内容全部由脚本按 BoardState v2 渲染：
+      state.js 草稿单例 → today/schedule/settings/team 各画一层 → preview.js 推 iframe → app.js 装配与保存。
+  -->
+  <div class="app" id="app" hidden>
+    <header class="topbar">
+      <span class="brand"><img class="brand-logo" src="icon.svg" alt="" width="22" height="22">班屏</span>
+      <nav class="seg" id="main-tabs" aria-label="编辑层次">
+        <button type="button" class="seg-btn is-on" data-tab="today">今日</button>
+        <button type="button" class="seg-btn" data-tab="schedule">课表</button>
+        <button type="button" class="seg-btn" data-tab="class">班级</button>
+        <button type="button" class="seg-btn" data-tab="share" id="tab-share" hidden>分享</button>
+        <button type="button" class="seg-btn" data-tab="layout" id="tab-layout" hidden>布局</button>
+      </nav>
+      <span class="who" id="who"></span>
+      <button type="button" class="link bind-hint" id="bind-hint" hidden>未绑定大屏</button>
+      <button type="button" class="link only-narrow" id="preview-toggle">预览</button>
+      <button type="button" class="link" id="logout">退出</button>
+    </header>
+
+    <div class="workspace">
+      <main class="editor" id="editor">
+        <section class="tabpane" data-pane="today" id="pane-today"></section>
+        <section class="tabpane" data-pane="schedule" id="pane-schedule" hidden></section>
+        <section class="tabpane" data-pane="class" id="pane-class" hidden></section>
+        <section class="tabpane" data-pane="share" id="pane-share" hidden></section>
+        <section class="tabpane" data-pane="layout" id="pane-layout" hidden></section>
+      </main>
+
+      <!-- 桌面端常驻；≤1100px 变成"预览"弹层（同一个 iframe，不重载） -->
+      <aside class="preview-panel" id="preview-panel" aria-label="大屏实时预览">
+        <div class="preview-head">
+          <span class="preview-title">大屏预览</span>
+          <span class="preview-state" id="preview-state">等待渲染层</span>
+          <button type="button" class="link only-narrow" id="preview-close">收起</button>
+        </div>
+        <div class="frame16x9">
+          <iframe id="preview" src="/board/index.html" title="大屏预览"></iframe>
+        </div>
+        <p class="preview-note">真实渲染层，改完 0.4 秒内同步；教室大屏按 16:9 显示。</p>
+        <div class="overview" id="preview-overview" hidden></div>
+      </aside>
+    </div>
+
+    <div class="savebar" id="savebar">
+      <span class="dirty" id="dirty"><i></i><span id="dirty-text">已同步</span></span>
+      <span class="save-msg" id="save-msg"></span>
+      <button type="button" class="primary" id="save-btn">保存并发布</button>
+    </div>
+  </div>
+
+  <!-- 登录：先选"创建班级 / 进入班级"，进入再分班主任与任课老师 -->
+  <section class="login-screen" id="login-screen" hidden>
+    <div class="login-card">
+      <p class="login-brand"><img class="brand-logo" src="icon.svg" alt="" width="28" height="28">班屏 · 教室大屏</p>
+      <h1 class="login-title">登录后即可改大屏</h1>
+      <p class="login-sub">课表录一次，之后每天只填作业和通知。</p>
+
+      <div class="entry" id="login-entry">
+        <button type="button" class="entry-btn" data-pane="claim">
+          <span class="entry-title">创建班级</span>
+          <span class="entry-note">班主任用开通密钥建班</span>
+        </button>
+        <button type="button" class="entry-btn" data-pane="enter">
+          <span class="entry-title">进入班级</span>
+          <span class="entry-note">班主任 / 任课老师</span>
+        </button>
+      </div>
+
+      <div class="panes" id="login-panes">
+        <div class="pane" data-pane="claim">
+          <button type="button" class="link back" data-back>← 返回</button>
+          <form class="form" data-form="claim">
+            <label class="fld"><span>班级名称</span><input name="className" autocomplete="off" maxlength="20" required placeholder="如 高二(3)班"></label>
+            <label class="fld"><span>我的姓名</span><input name="ownerName" autocomplete="off" maxlength="12" required placeholder="班主任姓名"></label>
+            <label class="fld"><span>设置密码</span><input name="password" type="password" autocomplete="new-password" required minlength="6" placeholder="至少 6 位，之后用它登录"></label>
+            <label class="fld"><span>开通密钥</span><input name="claimKey" autocomplete="off" required placeholder="我们发给你的密钥"></label>
+            <button type="submit" class="primary">创建班级</button>
+          </form>
+        </div>
+
+        <div class="pane" data-pane="enter">
+          <button type="button" class="link back" data-back>← 返回</button>
+          <div class="pane-switch" id="enter-switch">
+            <button type="button" class="link is-on" data-pane="owner">我是班主任</button>
+            <button type="button" class="link" data-pane="teacher">我是任课老师</button>
+          </div>
+
+          <form class="form" data-form="owner" data-enter="owner">
+            <label class="fld"><span>班级码</span><input name="classCode" autocomplete="off" inputmode="numeric" maxlength="8" required placeholder="8 位数字"></label>
+            <label class="fld"><span>密码</span><input name="password" type="password" autocomplete="current-password" required placeholder="创建班级时设的密码"></label>
+            <button type="submit" class="primary">进入</button>
+          </form>
+
+          <form class="form" data-form="teacher" data-enter="teacher" hidden>
+            <label class="fld"><span>班级码</span><input name="classCode" autocomplete="off" inputmode="numeric" maxlength="8" required placeholder="8 位数字"></label>
+            <label class="fld"><span>登录码</span><input name="loginCode" autocomplete="off" maxlength="6" required placeholder="班主任给你的 6 位登录码"></label>
+            <button type="submit" class="primary">进入</button>
+          </form>
+        </div>
+      </div>
+
+      <p class="msg" id="login-msg" hidden></p>
+    </div>
+
+    <!-- 宽屏时右侧放一块静态大屏示意：第一次打开就知道"这东西长什么样"。
+         故意不用真 iframe——/board/ 一加载就会去领配对码，登录页不该占配对名额。 -->
+    <aside class="login-demo" aria-hidden="true">
+      <div class="demo-head"><span>教室大屏长这样</span><span>发布后立即更新</span></div>
+      <div class="demo-board">
+        <div class="demo-top">
+          <span class="demo-class">高二(3)班</span>
+          <span class="demo-clock">周一 07:52</span>
+        </div>
+        <div class="demo-cols">
+          <div class="demo-main">
+            <p class="demo-label">今日作业</p>
+            <div class="demo-hw"><i class="c1"></i><div><b>语文</b><span>背《古诗二首》，明天默写</span></div></div>
+            <div class="demo-hw"><i class="c2"></i><div><b>数学</b><span>练习册 P32 第 1–5 题</span></div></div>
+            <div class="demo-hw"><i class="c3"></i><div><b>英语</b><span>朗读课文两遍，家长签字</span></div></div>
+            <div class="demo-hw"><i class="c4"></i><div><b>物理</b><span>实验报告：测小车速度</span></div></div>
+          </div>
+          <div class="demo-side">
+            <p class="demo-label">今日课表</p>
+            <div class="demo-period"><em>1</em>语文<span>08:00</span></div>
+            <div class="demo-period"><em>2</em>数学<span>08:50</span></div>
+            <div class="demo-period"><em>3</em>英语<span>09:50</span></div>
+            <div class="demo-period"><em>4</em>物理<span>10:40</span></div>
+            <div class="demo-period"><em>5</em>化学<span>13:30</span></div>
+            <div class="demo-period"><em>6</em>体育<span>14:20</span></div>
+          </div>
+        </div>
+        <p class="demo-strip">通知 · 周五 16:30 家长会，请提前十分钟到</p>
+      </div>
+      <p class="demo-foot">课表录一次，之后每天只填作业和通知。</p>
+    </aside>
+  </section>
+
+  <div class="toast" id="toast" hidden></div>
+
+  <!-- 与渲染层共用同一份上限 / 科目 / 主题 / 板块清单，不在这里另抄一套 -->
+  <script src="/board/limits.js"></script>
+  <script src="/board/subjects.js"></script>
+  <script src="/board/themes.js"></script>
+  <script src="/board/blocks/manifest.js"></script>
+  <!-- 二维码只用板端自带的 vendor，不引 CDN；离线教室也能出码 -->
+  <script src="/board/vendor/qrcode.js"></script>
+  <script src="api.js"></script>
+  <script src="form.js"></script>
+  <script src="clipboard.js"></script>
+  <script src="modal.js"></script>
+  <script src="model3.js"></script>
+  <script src="sanitize.js"></script>
+  <script src="state.js"></script>
+  <script src="preview.js"></script>
+  <script src="login.js"></script>
+  <script src="today.js"></script>
+  <script src="schedule.js"></script>
+  <script src="settings.js"></script>
+  <script src="team.js"></script>
+  <script src="share.js"></script>
+  <script src="overview.js"></script>
+  <script src="layout.js"></script>
+  <script src="roster.js"></script>
+  <script src="call.js"></script>
+  <script src="bind-gate.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
+

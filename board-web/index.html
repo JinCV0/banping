@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="favicon.ico" sizes="any" />
+    <link rel="icon" href="icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+    <meta name="theme-color" content="#2f493c" />
+    <title>班屏</title>
+    <link rel="stylesheet" href="board.css" />
+  </head>
+  <body>
+    <div class="board" id="board">
+      <div class="board-inner">
+        <!-- 头部固定、不占网格：问候 / 日期（+ 调休小标）/ 时钟 -->
+        <header class="hd">
+          <div class="hd-greet">
+            <h1 class="hd-title" data-bind="greeting">同学们，下午好</h1>
+            <p class="hd-date"><span data-bind="date"></span><span class="hd-badge" data-bind="badge" hidden></span></p>
+          </div>
+          <div class="hd-meta">
+            <div class="hd-clock" data-bind="clock">--:--</div>
+          </div>
+        </header>
+
+        <!-- 12×8 磁贴网格：每块磁贴的格子由 state.layout 决定（见 core/tiles.js） -->
+        <main class="tiles" id="tiles"></main>
+      </div>
+    </div>
+
+    <div class="link" id="link" hidden></div>
+
+    <!-- 未绑定班级时：右下角显示配对码 + 二维码，老师手机扫码即可绑定（见 docs/board-v2.md 第 4 节） -->
+    <section class="pair" id="pair" hidden aria-live="polite">
+      <div class="pair-head">
+        <span class="pair-dot"></span>
+        <span class="pair-title">这块大屏还没有绑定班级</span>
+      </div>
+      <div class="pair-body">
+        <canvas class="pair-qr" id="pair-qr" width="240" height="240"></canvas>
+        <div class="pair-info">
+          <p class="pair-hint">用手机扫左边的二维码</p>
+          <p class="pair-url" id="pair-url"></p>
+          <p class="pair-or">或在电脑上打开上方网址，输入配对码</p>
+          <div class="pair-code" id="pair-code">------</div>
+          <p class="pair-note" id="pair-note">配对码 10 分钟内有效</p>
+        </div>
+      </div>
+    </section>
+
+    <div class="screen-code" id="screen-code" hidden></div>
+
+    <script src="limits.js"></script>
+    <script src="subjects.js"></script>
+    <script src="themes.js"></script>
+    <script src="core/registry.js"></script>
+    <script src="core/resolve.js"></script>
+    <script src="core/scroll.js"></script>
+    <script src="core/pager.js"></script>
+    <script src="core/tiles.js"></script>
+    <script src="blocks/manifest.js"></script>
+    <script src="blocks/homework.js"></script>
+    <script src="blocks/todo.js"></script>
+    <script src="blocks/timetable.js"></script>
+    <script src="blocks/notice.js"></script>
+    <script src="blocks/duty.js"></script>
+    <script src="blocks/rollcall.js"></script>
+    <script src="blocks/countdown.js"></script>
+    <script src="blocks/quote.js"></script>
+    <script src="state.sample.js"></script>
+    <script src="vendor/qrcode.js"></script>
+    <script src="pairing.js"></script>
+    <script src="board.js"></script>
+  </body>
+</html>

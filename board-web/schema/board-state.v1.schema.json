@@ -1,0 +1,214 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/board-state.v1.schema.json",
+  "title": "BoardState v1",
+  "description": "教室大屏看板的唯一数据契约。渲染层(board-web)只认这份数据：不联网、不含业务判断；屏幕时间由渲染层自己走，数据里的 clock.text/date.text 只在定帧模式下使用。发布服务下发、设备侧落盘缓存的都是它。v1 在 M1 阶段原地演进（新增字段一律可选、向后兼容），对外发布前不另开版本号。",
+  "type": "object",
+  "required": ["schema", "version", "revision", "updatedAt", "greeting", "countdown", "homework", "todo", "timetable", "quote", "theme"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": { "const": "board-state" },
+    "version": { "const": 1 },
+    "revision": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "单调递增。设备侧只接受 revision 大于本地快照的报文，防止旧内容回滚。"
+    },
+    "updatedAt": { "type": "string", "format": "date-time" },
+
+    "greeting": { "$ref": "#/$defs/textBlock" },
+    "date": { "$ref": "#/$defs/textBlock" },
+    "clock": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "默认由渲染层自己走时（tick 不为 false 时 text 被忽略）。tick=false 才按 text 定帧显示。",
+      "properties": {
+        "text": { "type": "string", "description": "定帧模式下的时间文本，如 16:07。tick=false 时才显示。" },
+        "tick": { "type": "boolean", "description": "是否让渲染层自己走时。缺省 true；false 时按 text/date.text 定帧。" }
+      }
+    },
+
+    "countdown": {
+      "type": "object",
+      "required": ["label", "days"],
+      "additionalProperties": false,
+      "properties": {
+        "label": { "type": "string", "maxLength": 12, "description": "如 距离期末考试" },
+        "days": { "type": "integer", "minimum": 0, "description": "唯一真相：倒计时天数。sub 里的数字由它决定。" },
+        "sub": {
+          "type": "string",
+          "maxLength": 24,
+          "description": "可选副标题，如 剩余 97 天，继续加油。不写则由 days 生成；写了但数字与 days 不一致时，渲染层按 days 修正数字并在控制台留痕。"
+        }
+      }
+    },
+
+    "homework": {
+      "type": "object",
+      "required": ["title", "subjects"],
+      "additionalProperties": false,
+      "properties": {
+        "title": { "type": "string" },
+        "subjects": {
+          "type": "array",
+          "maxItems": 6,
+          "items": {
+            "type": "object",
+            "required": ["subject", "color", "items"],
+            "additionalProperties": false,
+            "properties": {
+              "subject": { "type": "string", "maxLength": 6, "description": "科目名，显示在左侧色块里。上限 6 字" },
+              "color": { "$ref": "#/$defs/color" },
+              "items": { "type": "array", "minItems": 1, "maxItems": 6, "items": { "type": "string", "maxLength": 42 } }
+            }
+          }
+        }
+      }
+    },
+
+    "todo": {
+      "type": "object",
+      "required": ["title", "items"],
+      "additionalProperties": false,
+      "properties": {
+        "title": { "type": "string" },
+        "items": { "type": "array", "maxItems": 6, "items": { "type": "string", "maxLength": 24 } }
+      }
+    },
+
+    "timetable": {
+      "type": "object",
+      "required": ["title", "items"],
+      "additionalProperties": false,
+      "properties": {
+        "title": { "type": "string" },
+        "items": {
+          "type": "array",
+          "maxItems": 9,
+          "items": {
+            "type": "object",
+            "required": ["index", "subject", "color"],
+            "additionalProperties": false,
+            "properties": {
+              "index": { "type": "integer", "minimum": 1, "maximum": 9, "description": "节次" },
+              "subject": { "type": "string", "maxLength": 6 },
+              "color": { "$ref": "#/$defs/color" }
+            }
+          }
+        }
+      }
+    },
+
+    "quote": {
+      "type": "object",
+      "required": ["text"],
+      "additionalProperties": false,
+      "properties": {
+        "text": { "type": "string", "maxLength": 30 },
+        "sign": { "type": "string", "maxLength": 16, "description": "如 —— 班主任寄语" }
+      }
+    },
+
+    "duty": {
+      "type": "object",
+      "description": "可选板块：今日值日。没写这块数据时，duty 板块不显示。",
+      "required": ["title", "items"],
+      "additionalProperties": false,
+      "properties": {
+        "title": { "type": "string" },
+        "items": { "type": "array", "minItems": 1, "maxItems": 8, "items": { "type": "string" }, "description": "值日生/值日组，逐个渲染成小标签" }
+      }
+    },
+
+    "notice": {
+      "type": "object",
+      "description": "可选板块：班级通知（一句话）。没写这块数据时，notice 板块不显示。",
+      "required": ["title", "text"],
+      "additionalProperties": false,
+      "properties": {
+        "title": { "type": "string" },
+        "text": { "type": "string", "maxLength": 60, "description": "超上限硬截断；没超但一行放不下时横向滚动" },
+        "sign": { "type": "string", "maxLength": 16, "description": "如 —— 班主任" }
+      }
+    },
+
+    "weather": {
+      "type": "object",
+      "description": "可选板块：今日天气。text 必填，其余可选；数据里没有这块就不渲染。",
+      "required": ["text"],
+      "additionalProperties": false,
+      "properties": {
+        "title": { "type": "string" },
+        "text": { "type": "string", "maxLength": 20, "description": "如 晴 18~26℃（已格式化，渲染层不算天气）" },
+        "tip": { "type": "string", "maxLength": 24, "description": "如 东南风 2 级，早晚微凉（放不下时横向滚动）" },
+        "place": { "type": "string", "maxLength": 8, "description": "如 本市 / 校区" }
+      }
+    },
+
+    "hygiene": {
+      "type": "object",
+      "description": "可选板块：卫生检查。grade / score / note 至少一项。",
+      "additionalProperties": false,
+      "properties": {
+        "title": { "type": "string" },
+        "grade": { "type": "string", "maxLength": 4, "description": "等级，如 A / 优" },
+        "color": { "$ref": "#/$defs/color", "description": "等级色块底色，缺省用主题强调色" },
+        "score": { "type": "number", "minimum": 0, "maximum": 100 },
+        "note": { "type": "string", "maxLength": 24, "description": "如 窗台有灰，已整改（放不下时横向滚动）" }
+      }
+    },
+
+    "event": {
+      "type": "object",
+      "description": "可选板块：活动倒计时（校运会、研学、期末等）。name 与 days 必填。",
+      "required": ["name", "days"],
+      "additionalProperties": false,
+      "properties": {
+        "title": { "type": "string" },
+        "name": { "type": "string", "maxLength": 16, "description": "如 校运动会" },
+        "days": { "type": "integer", "minimum": 0 },
+        "note": { "type": "string", "maxLength": 24, "description": "如 11 月 7 日 8:30 入场（放不下时横向滚动）" }
+      }
+    },
+
+    "blocks": {
+      "type": "array",
+      "description": "板块开关与落位。不写则用默认布局（作业 + 待办 + 课表）；写了就以它为准，数组里没有的板块不渲染。",
+      "maxItems": 8,
+      "items": {
+        "type": "object",
+        "required": ["type", "column"],
+        "additionalProperties": false,
+        "properties": {
+          "type": { "enum": ["homework", "todo", "timetable", "duty", "notice", "weather", "hygiene", "event"] },
+          "column": { "enum": ["main", "side", "strip"], "description": "main 左主栏 | side 右侧栏 | strip 底部通栏" },
+          "order": { "type": "integer", "minimum": 1, "maximum": 9, "description": "同一落位区内的先后，小的在前" }
+        }
+      }
+    },
+
+    "theme": {
+      "type": "object",
+      "required": ["bg", "panel", "panelInner", "accent", "text", "muted"],
+      "additionalProperties": false,
+      "properties": {
+        "bg": { "$ref": "#/$defs/color" },
+        "panel": { "$ref": "#/$defs/color", "description": "板块底色" },
+        "panelInner": { "$ref": "#/$defs/color", "description": "板块内小卡片底色" },
+        "accent": { "$ref": "#/$defs/color" },
+        "text": { "$ref": "#/$defs/color" },
+        "muted": { "$ref": "#/$defs/color" }
+      }
+    }
+  },
+
+  "$defs": {
+    "color": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" },
+    "textBlock": {
+      "type": "object",
+      "required": ["text"],
+      "additionalProperties": false,
+      "properties": { "text": { "type": "string" } }
+    }
+  }
+}

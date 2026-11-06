@@ -1,0 +1,19 @@
+<!--
+  班屏 · 应用图标（主文件）
+  一块屏，屏幕里正显示着"今天这一节"（金色那一行）。
+  深绿 #1b2d22 → #3c6049 是看板的底色，金色 #f1bd4e 是看板的强调色，图标与产品同色系。
+  512 网格、圆角 116（iOS / Android / Windows 都按这个比例收边）。
+  改这里之后跑 `node design/make-icons.mjs` 重新生成 png / ico。
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0.35" y2="1">
+      <stop offset="0" stop-color="#3c6049"/>
+      <stop offset="1" stop-color="#1b2d22"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="116" fill="url(#bg)"/>
+  <rect x="80" y="104" width="352" height="304" rx="52" fill="none" stroke="#eaf2ec" stroke-opacity="0.92" stroke-width="26"/>
+  <rect x="140" y="176" width="232" height="68" rx="34" fill="#f1bd4e"/>
+  <rect x="140" y="284" width="140" height="38" rx="19" fill="#eaf2ec" fill-opacity="0.42"/>
+</svg>

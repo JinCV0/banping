@@ -1,0 +1,15 @@
+{
+  "name": "board-publish-api",
+  "private": true,
+  "version": "0.1.0",
+  "description": "教室大屏看板的中转层：老师端 web 发布 → 版本号 + 推送 → 大屏宿主拉取",
+  "type": "module",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "start": "node main.js",
+    "smoke": "node tools/smoke.js"
+  },
+  "dependencies": {}
+}

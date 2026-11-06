@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <link rel="icon" href="favicon.ico" sizes="any">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <meta name="theme-color" content="#2f493c">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>配对教室大屏 · 班屏</title>
+  <link rel="stylesheet" href="app.css">
+</head>
+<body>
+  <!--
+    扫码后的落点：?code=6 位配对码。
+    没登录先登录（班主任账号），登录后确认绑定；绑定成功给出 screenCode 与回老师端的入口。
+  -->
+  <section class="pair-screen">
+    <div class="pair-card">
+      <p class="pair-kicker">班屏 · 设备配对</p>
+      <div id="pair-icon" class="pair-icon" hidden></div>
+      <h1 class="pair-title" id="pair-title">正在读取配对码…</h1>
+      <p class="pair-sub" id="pair-sub">请稍候</p>
+
+      <div id="pair-code-wrap" hidden>
+        <p class="pair-code-label">这台大屏的配对码</p>
+        <p class="pair-code" id="pair-code">------</p>
+      </div>
+
+      <div id="pair-login" hidden>
+        <form class="form" id="pair-login-form">
+          <label class="fld"><span>班级码</span><input type="text" name="classCode" autocomplete="off" inputmode="numeric" maxlength="8" required placeholder="8 位数字"></label>
+          <label class="fld"><span>班主任密码</span><input name="password" type="password" autocomplete="current-password" required placeholder="创建班级时设的密码"></label>
+          <button type="submit" class="primary">登录并继续</button>
+        </form>
+      </div>
+
+      <div id="pair-confirm" hidden>
+        <div class="pair-actions">
+          <button type="button" class="primary" id="pair-bind">确认绑定这台大屏</button>
+          <button type="button" class="ghost" id="pair-switch">换个账号</button>
+        </div>
+      </div>
+
+      <div id="pair-limit" hidden>
+        <div class="pair-actions">
+          <button type="button" class="primary" id="pair-go-class">去班级页解除旧大屏</button>
+        </div>
+      </div>
+
+      <div id="pair-done" hidden>
+        <div class="pair-actions">
+          <a class="primary" id="pair-back" href="/?tab=class" style="text-align:center;text-decoration:none;display:inline-block;">返回老师端</a>
+          <button type="button" class="ghost" id="pair-again">再绑一台</button>
+        </div>
+      </div>
+
+      <p class="msg" id="pair-msg" hidden></p>
+      <p class="pair-foot" id="pair-foot">绑定后这台大屏会一直显示本班看板；换教室时先在「班级 → 教室大屏」解除。</p>
+    </div>
+  </section>
+
+  <script src="api.js"></script>
+  <script src="pair.js"></script>
+</body>
+</html>
+
