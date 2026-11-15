@@ -31,6 +31,8 @@
 1. `CLAIM_KEY_SECRET` 必须自己生成并保存好：`node publish-api/tools/claim-key.mjs --init`（写进 `deploy/claim-secret.txt`）。**这个种子等于印钞机**，拿到它就能无限造开通密钥，别提交、别外发。
 2. 部署完把大屏指过去，否则大屏还在连作者的服务器：
 
+> 公开库里**不含任何真实种子、密钥或服务器凭证**：作者的官方实例把种子只放在服务器的环境变量里，仓库里没有，`.gitignore` 也挡住了 `deploy/claim-secret.txt` 与 `deploy/.env`。别人要跑自己的实例，必须自己 `--init` 生成一份。
+
 ```powershell
 '{"server":"https://你的域名"}' | Set-Content "$env:LOCALAPPDATA\班屏\host.json" -Encoding utf8
 # 或启动参数：BoardHost.exe --api https://你的域名
