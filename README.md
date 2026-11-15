@@ -77,6 +77,8 @@ cd host-m0 && dotnet build            # 宿主 → bin/Debug/net8.0-windows/Boar
 
 CI 在 `.github/workflows/`：网页服务端每次 push 跑冒烟 + 容器端到端，安装包在 Windows runner 上打，推 `vX.Y.Z` tag 时自动建 Release（版本号唯一来源是 `version.json`）。
 
+接手改代码、打安装包、部署服务端（含免费方案与限时体验口径），先看 **[AGENTS.md](AGENTS.md)**。
+
 ## 域名
 
 线上跑在 `https://board.hibot.ink/`（大屏页 `/board/`）。
