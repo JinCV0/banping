@@ -1,0 +1,10 @@
+.git
+.gitignore
+reference
+deploy
+**/data
+**/logs
+**/bin
+**/obj
+**/node_modules
+**/*.log

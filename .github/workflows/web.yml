@@ -1,0 +1,64 @@
+name: 网页服务端
+
+# 网页端不靠"看着像成功了"：冒烟（内存库全链路）+ 起真容器跑 7 项验收。
+# 部署 VPS 不在这里做（需要机器凭据），见 deploy/README.md。
+
+on:
+  push:
+    branches: [master, main]
+    paths:
+      - "publish-api/**"
+      - "board-web/**"
+      - "Dockerfile"
+      - "deploy/**"
+      - ".github/workflows/web.yml"
+  pull_request:
+    paths:
+      - "publish-api/**"
+      - "board-web/**"
+      - "Dockerfile"
+  workflow_dispatch:
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: 全链路冒烟（建班→发布→科任改科→配对→解绑）
+        run: node publish-api/tools/smoke.js
+
+  container:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: 构建镜像
+        run: docker build -t class-board:ci .
+
+      - name: 起容器并等健康
+        run: |
+          set -euo pipefail
+          docker run -d --name board -p 8787:8787 \
+            -e CLAIM_KEY_SECRET=ci-only-claim-secret-0123456789 \
+            -e LICENSE_DAYS=365 \
+            class-board:ci
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:8787/api/v1/health; then echo; break; fi
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:8787/api/v1/health
+
+      - name: 7 项验收
+        run: node publish-api/tools/verify-remote.mjs http://127.0.0.1:8787
+
+      - name: 失败留日志
+        if: failure()
+        run: docker logs board || true

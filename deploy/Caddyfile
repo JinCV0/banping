@@ -1,0 +1,20 @@
+# 域名由 deploy/.env 的 BOARD_DOMAIN 决定，Caddy 会自动申请 Let's Encrypt 证书。
+{
+	email {$ACME_EMAIL}
+	# 有域名后不要开 on_demand，正常按域名签发即可
+}
+
+{$BOARD_DOMAIN} {
+	encode zstd gzip
+
+	# SSE 必须关掉响应缓冲，否则大屏的推送要等缓冲区满才到
+	reverse_proxy board:8787 {
+		flush_interval -1
+		header_up X-Forwarded-Proto {scheme}
+	}
+
+	log {
+		output stdout
+		format console
+	}
+}

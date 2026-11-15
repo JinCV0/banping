@@ -1,0 +1,22 @@
+<Project>
+
+  <!--
+    版本号唯一来源：根目录 version.json。
+
+    改版本只改那一个文件：exe 的文件属性（Version/FileVersion/InformationalVersion）、
+    scripts/build-installer.ps1 传给 wix 的 ProductVersion，全都从它推出来。
+    手打 `dotnet build` 时 MSBuild 会自动读这里的属性，不需要额外参数。
+
+    以前版本号散在 4 个地方（脚本参数 / wxs / csproj 三行 / README），改一处漏三处，
+    msi 里还是旧号，MajorUpgrade 就判不出升降级。
+  -->
+  <PropertyGroup>
+    <ClassBoardVersionJson>$([System.IO.File]::ReadAllText('$(MSBuildThisFileDirectory)version.json'))</ClassBoardVersionJson>
+    <ClassBoardVersion>$([System.Text.RegularExpressions.Regex]::Match($(ClassBoardVersionJson), '&quot;version&quot;\s*:\s*&quot;([0-9]+\.[0-9]+\.[0-9]+)&quot;').Groups[1].Value)</ClassBoardVersion>
+    <Version>$(ClassBoardVersion)</Version>
+    <FileVersion>$(ClassBoardVersion).0</FileVersion>
+    <InformationalVersion>$(ClassBoardVersion)</InformationalVersion>
+    <AssemblyVersion>$(ClassBoardVersion).0</AssemblyVersion>
+  </PropertyGroup>
+
+</Project>

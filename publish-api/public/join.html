@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <link rel="icon" href="favicon.ico" sizes="any">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <meta name="theme-color" content="#2f493c">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>加入班级 · 班屏</title>
+  <link rel="stylesheet" href="app.css">
+</head>
+<body class="join-page">
+  <!--
+    任课老师免登入口：/join.html?c=<8位班级码>&k=<6位登录码>
+    打开即用链接里的凭证登录；失败才退化成手填表单。不需要已登录状态。
+  -->
+  <section class="join-screen">
+    <div class="join-card">
+      <p class="login-brand"><img class="brand-logo" src="icon.svg" alt="" width="28" height="28">班屏 · 老师端</p>
+      <h1 class="join-title" id="join-title">正在进入班级…</h1>
+      <p class="join-sub" id="join-sub">分享链接里带着班级码和登录码，打开就自动进班，只改自己那一科。</p>
+
+      <p class="join-loading" id="join-loading"><span class="spinner"></span>正在验证链接…</p>
+
+      <form class="form" id="join-form" hidden>
+        <label class="fld"><span>班级码</span><input name="classCode" inputmode="numeric" autocomplete="off" maxlength="8" placeholder="8 位数字"></label>
+        <label class="fld"><span>登录码</span><input name="loginCode" autocomplete="off" maxlength="6" placeholder="班主任给你的 6 位登录码"></label>
+        <button type="submit" class="primary">进入</button>
+      </form>
+
+      <div class="join-actions" id="join-actions" hidden>
+        <button type="button" class="primary" id="join-switch">用这位老师的身份进入</button>
+        <a class="link" id="join-home" href="/">返回老师端</a>
+      </div>
+
+      <p class="msg" id="join-msg" hidden></p>
+      <p class="join-foot">链接就是凭证，别转发给外人；班主任换码后旧链接立即失效。</p>
+    </div>
+  </section>
+
+  <script src="api.js"></script>
+  <script src="join.js"></script>
+</body>
+</html>

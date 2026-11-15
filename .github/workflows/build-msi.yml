@@ -1,0 +1,120 @@
+name: 打包 MSI
+
+# 只在这里打安装包：WiX 只有 Windows 能跑，产物 51 MB，本机不存、不进 git。
+#   · tag vX.Y.Z  → 出 msi 并挂到 Release
+#   · 改到打包相关文件 → 只出 msi 校验（不上传附件）
+# 想手动跑：Actions → 打包 MSI → Run workflow
+
+on:
+  push:
+    tags: ["v*"]
+    branches: [master, main]
+    paths:
+      - "installer/**"
+      - "host-m0/**"
+      - "scripts/build-installer.ps1"
+      - "scripts/verify-msi.ps1"
+      - "version.json"
+      - "Directory.Build.props"
+      - ".github/workflows/build-msi.yml"
+  pull_request:
+    paths:
+      - "installer/**"
+      - "host-m0/**"
+      - "scripts/build-installer.ps1"
+      - "scripts/verify-msi.ps1"
+      - "version.json"
+      - "Directory.Build.props"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 读版本号
+        id: ver
+        shell: pwsh
+        run: |
+          $v = (Get-Content version.json -Raw | ConvertFrom-Json).version
+          if ($v -notmatch '^\d+\.\d+\.\d+$') { throw "version.json 里的 '$v' 不是 主.次.修" }
+          "version=$v" >> $env:GITHUB_OUTPUT
+
+      - name: tag 必须与 version.json 一致
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"
+          if ($tag -ne "v${{ steps.ver.outputs.version }}") {
+            throw "tag 是 $tag，但 version.json 是 ${{ steps.ver.outputs.version }}。先改 version.json 再打 tag。"
+          }
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: 装 WiX 5（7 起要付费条款，锁 5.0.2）
+        shell: pwsh
+        run: dotnet tool install --global wix --version 5.0.2
+
+      - name: 打包机体检
+        shell: pwsh
+        run: pwsh -File scripts/doctor.ps1
+
+      - name: 打安装包（跳过图标：图标已入库，不依赖 Edge）
+        shell: pwsh
+        run: pwsh -File scripts/build-installer.ps1 -SkipIcons
+
+      - name: 真装 + 真卸（断言文件与三个快捷方式）
+        shell: pwsh
+        run: |
+          $msi = Get-ChildItem dist/*.msi | Select-Object -First 1
+          pwsh -File scripts/verify-msi.ps1 -Msi $msi.FullName -Full
+
+      - name: 产物摘要
+        shell: pwsh
+        run: |
+          $i = Get-Content dist/build-info.json -Raw | ConvertFrom-Json
+          if ($i.gitDirty) { Write-Host "::warning::构建时工作区不干净（gitDirty=true），发布前确认改动都已提交" }
+          $md = @(
+            "班屏 $($i.version) 安装包", "",
+            "| 项 | 值 |", "| --- | --- |",
+            "| 文件 | ``$($i.installFile)`` |",
+            "| 大小 | $([math]::Round($i.msiBytes/1MB,1)) MB |",
+            "| sha256 | ``$($i.msiSha256)`` |",
+            "| 提交 | ``$($i.gitCommit)`` |",
+            "| WiX | $($i.tools.wix) |"
+          ) -join "`n"
+          $md | Out-File publish-notes.md -Encoding utf8
+          $md | Out-File $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: classboard-msi-${{ steps.ver.outputs.version }}
+          path: |
+            dist/*.msi
+            dist/*.sha256.txt
+            dist/build-info.json
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: 发 Release（仅 tag）
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $ver = "${{ steps.ver.outputs.version }}"
+          $files = Get-ChildItem dist/*.msi, dist/*.sha256.txt, dist/build-info.json
+          gh release create "${{ github.ref_name }}" $files.FullName `
+            --title "班屏 $ver" `
+            --notes-file publish-notes.md

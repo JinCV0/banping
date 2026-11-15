@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  班屏 安装包（WiX v4+ schema，用 `wix build` 出 msi）。
+
+  为什么是 perUser：教室电脑多数是受限账号，装到 %LOCALAPPDATA% 不需要管理员，
+  卸载走「设置 → 应用」，和普通软件一致。宿主自己只往 %LOCALAPPDATA%\ClassBoard 写缓存和日志，
+  Program Files 那种只读目录反而会把它坑死。
+
+  重新打包（命令里的参数照 scripts/build-installer.ps1 抄，XML 注释里不能出现两个连字符）：
+    1) node design/make-icons.mjs（图标已入库，CI 里用 -SkipIcons 跳过）
+    2) dotnet publish ../host-m0 -c Release -r win-x64，自包含、单文件、含原生库，输出到 ../dist/app
+    3) wix build BoardHost.wxs -arch x64 -d ProductVersion=<版本号> -o ../dist/班屏-<版本号>.msi
+
+  Version 来自 -d ProductVersion（根目录 version.json → 脚本读出来传进来），
+  这里不要再写死数字，否则 msi 里的版本号和 exe 对不上，MajorUpgrade 就失效。
+-->
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Package
+      Name="班屏"
+      Manufacturer="班屏"
+      Version="$(var.ProductVersion)"
+      UpgradeCode="96DA5BA2-53A3-4E37-8C93-7C03838B3B96"
+      Scope="perUser"
+      Compressed="yes"
+      Language="2052">
+
+    <SummaryInformation Description="班屏 · 教室大屏" />
+    <MajorUpgrade DowngradeErrorMessage="已经装了更新的版本，先卸载再装。" />
+    <MediaTemplate EmbedCab="yes" />
+
+    <Icon Id="AppIcon" SourceFile="host-m0\app.ico" />
+    <Property Id="ARPPRODUCTICON" Value="AppIcon" />
+
+    <Feature Id="Main" Title="班屏" Level="1">
+      <ComponentGroupRef Id="AppFiles" />
+    </Feature>
+  </Package>
+
+  <Fragment>
+    <StandardDirectory Id="LocalAppDataFolder">
+      <Directory Id="INSTALLFOLDER" Name="班屏" />
+    </StandardDirectory>
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Directory Id="AppMenuFolder" Name="班屏" />
+    </StandardDirectory>
+    <StandardDirectory Id="DesktopFolder" />
+  </Fragment>
+
+  <Fragment>
+    <ComponentGroup Id="AppFiles" Directory="INSTALLFOLDER">
+      <Component Id="MainExe" Guid="*">
+        <File Id="BoardHostExe" Source="dist\app\BoardHost.exe" KeyPath="yes">
+          <!-- 桌面 + 开始菜单：老师/网管都从这两个地方找 -->
+          <Shortcut Id="DesktopShortcut" Directory="DesktopFolder" Name="班屏"
+                    WorkingDirectory="INSTALLFOLDER" Icon="AppIcon" Advertise="no" />
+          <Shortcut Id="StartMenuShortcut" Directory="AppMenuFolder" Name="班屏"
+                    WorkingDirectory="INSTALLFOLDER" Icon="AppIcon" Advertise="no" />
+          <!-- 开机自启：教室大屏开机就该出现，不要等人去点 -->
+          <Shortcut Id="StartupShortcut" Directory="StartupFolder" Name="班屏"
+                    WorkingDirectory="INSTALLFOLDER" Icon="AppIcon" Advertise="no" />
+        </File>
+        <RemoveFolder Id="RemoveAppMenuFolder" Directory="AppMenuFolder" On="uninstall" />
+      </Component>
+    </ComponentGroup>
+  </Fragment>
+</Wix>

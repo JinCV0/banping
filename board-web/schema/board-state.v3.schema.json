@@ -1,0 +1,443 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://board.invalid/schema/board-state.v3.schema.json",
+  "title": "BoardState v3",
+  "description": "大屏渲染层与发布服务之间唯一的契约。v3 把固定的三个落位区（main/side/strip）换成了 12×8 磁贴网格，新增花名册与值日/点名。字段说明见 docs/board-v3.md。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "version", "revision", "updatedAt", "subjects", "periods", "schedule", "layout"],
+  "properties": {
+    "schema": {
+      "type": "string",
+      "const": "board-state"
+    },
+    "version": {
+      "type": "integer",
+      "const": 3
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "updatedAt": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}"
+    },
+    "class": {
+      "$ref": "#/definitions/classInfo"
+    },
+    "greeting": {
+      "$ref": "#/definitions/greeting"
+    },
+    "countdown": {
+      "$ref": "#/definitions/countdown"
+    },
+    "subjects": {
+      "type": "array",
+      "maxItems": 20,
+      "items": {
+        "$ref": "#/definitions/subject"
+      }
+    },
+    "periods": {
+      "type": "array",
+      "maxItems": 12,
+      "items": {
+        "$ref": "#/definitions/period"
+      }
+    },
+    "schedule": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/definitions/dayPlan"
+      }
+    },
+    "overrides": {
+      "type": "array",
+      "maxItems": 60,
+      "items": {
+        "$ref": "#/definitions/override"
+      },
+      "description": "按日期覆盖：off=true 放假不上课；useWeekday=1..7 调休照那一周的课表上；periods=当天临时换课。三者可叠加，periods 优先"
+    },
+    "today": {
+      "$ref": "#/definitions/today"
+    },
+    "roster": {
+      "$ref": "#/definitions/roster"
+    },
+    "duty": {
+      "$ref": "#/definitions/dutyRule"
+    },
+    "layout": {
+      "$ref": "#/definitions/layout"
+    },
+    "theme": {
+      "$ref": "#/definitions/theme"
+    }
+  },
+  "definitions": {
+    "classInfo": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20
+        }
+      }
+    },
+    "greeting": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "maxLength": 12
+        }
+      }
+    },
+    "countdown": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["label", "date"],
+      "properties": {
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 12
+        },
+        "date": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+        }
+      }
+    },
+    "subject": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "color"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_-]{0,15}$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 6
+        },
+        "color": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$"
+        }
+      }
+    },
+    "period": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["index", "start", "end"],
+      "properties": {
+        "index": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 12
+        },
+        "start": {
+          "type": "string",
+          "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+        },
+        "end": {
+          "type": "string",
+          "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+        }
+      }
+    },
+    "dayPlan": {
+      "type": "array",
+      "maxItems": 12,
+      "items": {
+        "type": "string",
+        "maxLength": 16
+      }
+    },
+    "override": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["date"],
+      "properties": {
+        "date": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+        },
+        "off": {
+          "type": "boolean"
+        },
+        "useWeekday": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 7
+        },
+        "periods": {
+          "$ref": "#/definitions/dayPlan"
+        }
+      }
+    },
+    "today": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["date"],
+      "properties": {
+        "date": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+        },
+        "homework": {
+          "type": "array",
+          "maxItems": 12,
+          "items": {
+            "$ref": "#/definitions/homeworkEntry"
+          }
+        },
+        "todo": {
+          "type": "array",
+          "maxItems": 6,
+          "items": {
+            "type": "string",
+            "maxLength": 24
+          }
+        },
+        "notice": {
+          "$ref": "#/definitions/signable"
+        },
+        "duty": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "text": {
+              "type": "string",
+              "maxLength": 40
+            }
+          }
+        },
+        "quote": {
+          "$ref": "#/definitions/signable"
+        },
+        "call": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["name"],
+          "properties": {
+            "name": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 12
+            },
+            "at": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}"
+            }
+          },
+          "description": "老师手机上「抽一个」抽到的学生；大屏点名磁贴显示它，超过 24 小时不再显示"
+        }
+      }
+    },
+    "homeworkEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["subject", "items"],
+      "properties": {
+        "subject": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_-]{0,15}$"
+        },
+        "items": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 6,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 42
+          }
+        },
+        "note": {
+          "type": "string",
+          "maxLength": 24
+        }
+      }
+    },
+    "signable": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["text"],
+      "properties": {
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60
+        },
+        "sign": {
+          "type": "string",
+          "maxLength": 16
+        }
+      }
+    },
+    "roster": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["students"],
+      "properties": {
+        "students": {
+          "type": "array",
+          "maxItems": 80,
+          "items": {
+            "$ref": "#/definitions/student"
+          }
+        },
+        "updatedAt": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}"
+        }
+      }
+    },
+    "student": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9]{4,16}$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 12
+        },
+        "no": {
+          "type": "string",
+          "maxLength": 6
+        }
+      }
+    },
+    "dutyRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "size"],
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": ["weekly", "daily", "off"]
+        },
+        "size": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 8
+        },
+        "anchor": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+        }
+      },
+      "description": "值日轮换规则：weekly=每组值一周、daily=每天一组、off=不自动排（用手写的 today.duty.text）；anchor=分组起点日期，缺省为开学那天"
+    },
+    "layout": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["cols", "rows", "tiles"],
+      "properties": {
+        "cols": {
+          "type": "integer",
+          "const": 12
+        },
+        "rows": {
+          "type": "integer",
+          "const": 8
+        },
+        "tiles": {
+          "type": "array",
+          "maxItems": 12,
+          "items": {
+            "$ref": "#/definitions/tile"
+          }
+        }
+      },
+      "description": "12×8 磁贴网格：x/y 从 1 开始，w/h 是占几格。渲染端按百分比摆放，所以任何比例都不溢出"
+    },
+    "tile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "block", "x", "y", "w", "h"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_-]{0,23}$"
+        },
+        "block": {
+          "type": "string",
+          "enum": ["homework", "todo", "timetable", "notice", "duty", "rollcall", "countdown", "quote"]
+        },
+        "x": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 12
+        },
+        "y": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 8
+        },
+        "w": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 12
+        },
+        "h": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 8
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 8
+        },
+        "flip": {
+          "type": "string",
+          "enum": ["auto", "off"],
+          "description": "auto=装不下就自己翻页（默认）；off=只显示第一页"
+        }
+      }
+    },
+    "theme": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "bg": {
+          "$ref": "#/definitions/color"
+        },
+        "panel": {
+          "$ref": "#/definitions/color"
+        },
+        "panelInner": {
+          "$ref": "#/definitions/color"
+        },
+        "accent": {
+          "$ref": "#/definitions/color"
+        },
+        "text": {
+          "$ref": "#/definitions/color"
+        },
+        "muted": {
+          "$ref": "#/definitions/color"
+        }
+      }
+    },
+    "color": {
+      "type": "string",
+      "pattern": "^#[0-9a-fA-F]{6}$"
+    }
+  }
+}

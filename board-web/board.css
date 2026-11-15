@@ -1,0 +1,950 @@
+/*
+  大屏样式（1920×1080 基线，磁贴网格 v3）
+  ---------------------------------------------------------------
+  三条硬约束：
+    ① 左侧 32.4% 让给桌面图标列（原版就是把内容压在图标右边），这是复刻的关键；
+    ② 版面是 12×8 的 CSS Grid（.tiles），每块磁贴的 grid-area 由 core/tiles.js 算好、
+       写在元素的行内样式上；CSS 不猜位置；
+    ③ 磁贴装不下先降字号（.is-tight / .is-tighter），再不够交给 core/pager.js 分页（9s）。
+       任何情况下都不许把页面顶出滚动条。
+  CSS 只管"长什么样"，不管"有没有数据"；没数据的磁贴根本不会生成 DOM。
+*/
+:root {
+  --bg: #2b4539;
+  --panel: #35553f;
+  --panel-inner: #40634c;
+  --accent: #f1bd4e;
+  --text: #f5f8f4;
+  --muted: #b7c9bd;
+
+  --radius-panel: 0.7vw;
+  --radius-card: 0.5vw;
+
+  /* 头部固定，不跟磁贴抢字号 */
+  --fs-title: 2.7vw;
+  --fs-date: 1.22vw;
+  --fs-clock: 3.05vw;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Microsoft YaHei UI", "Microsoft YaHei", "PingFang SC", "Hiragino Sans GB",
+    "Source Han Sans SC", "Noto Sans CJK SC", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  transition: background 0.3s ease;
+}
+
+.board {
+  display: flex;
+  justify-content: center;
+  width: 100vw;
+  height: 100vh;
+}
+
+.board-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 2.2vh;
+  width: 100%;
+  height: 100%;
+  padding: 4.2vh 5.4% 3.2vh 32.4%;
+  transition: opacity 0.3s ease;
+}
+
+.is-unpaired .board-inner {
+  opacity: 0.45;
+}
+
+/* ---------------- 头部 ---------------- */
+.hd {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 2vw;
+  flex: 0 0 auto;
+  min-width: 0;
+}
+
+.hd-greet {
+  min-width: 0;
+}
+
+.hd-title {
+  margin: 0;
+  font-size: var(--fs-title);
+  font-weight: 600;
+  letter-spacing: 0.08vw;
+  line-height: 1.15;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hd-date {
+  margin: 0.9vh 0 0;
+  font-size: var(--fs-date);
+  color: var(--muted);
+  letter-spacing: 0.04vw;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 调休 / 放假 / 临时换课的小标：今天跟平常不一样时贴在日期后面 */
+.hd-date .hd-badge {
+  display: inline-block;
+  margin-left: 0.7vw;
+  padding: 0.12vh 0.55vw;
+  border: 1px solid currentColor;
+  border-radius: 0.35vw;
+  font-size: 0.86em;
+  color: var(--accent);
+  line-height: 1.5;
+  vertical-align: 0.08em;
+}
+
+.hd-date .hd-badge[hidden] {
+  display: none;
+}
+
+.hd-meta {
+  display: flex;
+  align-items: flex-end;
+  gap: 1.8vw;
+  flex: 0 0 auto;
+}
+
+.hd-clock {
+  font-size: var(--fs-clock);
+  font-weight: 600;
+  line-height: 0.95;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02vw;
+}
+
+/* ---------------- 12×8 磁贴网格 ---------------- */
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  grid-template-rows: repeat(8, minmax(0, 1fr));
+  gap: 1.1vh 0.9vw;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* ---------------- 磁贴 ---------------- */
+/*
+  字号是"磁贴内基准"：.tile 的 font-size 由 data-size 档位给，内部所有尺寸一律用 em。
+  这样同一套板块样式，放进 2×2 和 7×4 都按比例缩，不需要给每种尺寸写一份。
+*/
+.tile {
+  --tile-fs: clamp(13px, 1.05vw, 24px);
+
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  padding: 0.85em 1em 1em;
+  border-radius: min(var(--radius-panel), 1.2em);
+  background: var(--panel);
+  overflow: hidden;
+  font-size: var(--tile-fs);
+  line-height: 1.4;
+}
+
+.tile[data-size="xl"] {
+  --tile-fs: clamp(20px, 1.55vw, 36px);
+}
+
+.tile[data-size="lg"] {
+  --tile-fs: clamp(18px, 1.35vw, 30px);
+}
+
+.tile[data-size="md"] {
+  --tile-fs: clamp(16px, 1.18vw, 26px);
+}
+
+.tile[data-size="sm"] {
+  --tile-fs: clamp(14px, 1.02vw, 22px);
+}
+
+.tile[data-size="xs"] {
+  --tile-fs: clamp(12px, 0.88vw, 18px);
+}
+
+.tile-head {
+  display: flex;
+  align-items: center;
+  gap: 0.45em;
+  flex: 0 0 auto;
+  min-width: 0;
+  margin-bottom: 0.55em;
+}
+
+.tile-bar {
+  flex: 0 0 auto;
+  width: 0.18em;
+  height: 1.05em;
+  min-height: 10px;
+  border-radius: 1em;
+  background: var(--accent);
+}
+
+.tile-title {
+  margin: 0;
+  font-size: 0.98em;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tile-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45em;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  /* 磁贴里"说不说得下"看的是这块的宽度，不是屏幕宽度：皮肤里的 cqw 与 @container 都挂在它身上 */
+  container-type: inline-size;
+}
+
+/* 磁贴里的行一律不压缩：宁可溢出交给 core/pager.js 轮播，也不许文字叠在一起（2026-11-03 压测踩过） */
+.tile-body > * {
+  flex: 0 0 auto;
+}
+
+.tile-body > .is-page-hidden {
+  display: none;
+}
+/* ---------- 磁贴的几种"说法"（skin） ----------
+   skin 由板块在 defineBlock 里声明，board.js 写在 data-skin 上。
+   目的不是装饰：让隔五米的人一眼分清"这是要抄的作业"还是"这是今天的数字"。 */
+.tile[data-skin="spotlight"] {
+  padding: 0.9em;
+  background: linear-gradient(155deg, color-mix(in srgb, var(--accent) 14%, var(--panel)), var(--panel) 70%);
+}
+
+/* 聚光灯和引言的磁贴不要标题栏：内容自己就是标题 */
+.tile[data-skin="spotlight"] .tile-head,
+.tile[data-skin="quote"] .tile-head {
+  display: none;
+}
+
+/* 引言不要卡片底，像写在墙上的一行字 */
+.tile[data-skin="quote"] {
+  padding: 0.55em 0.9em 0.7em 0.55em;
+  background: transparent;
+}
+
+.tile[data-skin="quote"] .tile-body {
+  gap: 0;
+}
+
+/* 这几块磁贴的主体要吃掉整块高度（覆盖 .tile-body > * 的 flex:0 0 auto） */
+.tile-body > .tt,
+.tile-body > .note,
+.tile-body > .duty,
+.tile-body > .cd,
+.tile-body > .call,
+.tile-body > .quote {
+  flex: 1 1 auto;
+}
+
+/* 太小（xs）的磁贴省掉标题前的色条，把宽度让给文字 */
+.tile[data-size="xs"] .tile-bar {
+  display: none;
+}
+
+.tile[data-size="xs"] .tile-head {
+  margin-bottom: 0.35em;
+}
+
+.tile[data-size="xs"] .tile-title {
+  font-size: 0.92em;
+}
+
+/* ---------------- 装不下：先降字号 ---------------- */
+.tile.is-tight {
+  font-size: calc(var(--tile-fs) * 0.88);
+}
+
+.tile.is-tighter {
+  font-size: calc(var(--tile-fs) * 0.78);
+}
+
+.tile.is-tight .tile-body {
+  gap: 0.35em;
+}
+
+.tile.is-tighter .tile-body {
+  gap: 0.25em;
+}
+
+/* ---------------- 分页（每块磁贴各跑各的，9s 一页） ---------------- */
+/*
+  一页装几行就几行，但要让这几行撑满磁贴高度，否则一页只装 2 科、下面空一大片，
+  看着像"漏排了"（2026-11-03 用户反馈"拥挤"）。
+*/
+.tile.is-paged .tile-body > * {
+  flex: 1 1 0;
+}
+
+/* 一页只装一科时，色块对齐到第一条作业、内容从顶上排，别浮在半空 */
+.tile.is-paged .hw-row {
+  align-items: flex-start;
+}
+
+.tile.is-paged .hw-body {
+  gap: 0.5em;
+}
+
+.tile.is-paged .todo-item {
+  align-items: center;
+}
+
+/* ---------------- 空态 ---------------- */
+.tile-empty {
+  align-items: center;
+  justify-content: center;
+  gap: 0.5em;
+  text-align: center;
+}
+
+.tile-empty .empty-title {
+  margin: 0;
+  font-size: 1.4em;
+  font-weight: 600;
+}
+
+.tile-empty .empty-sub {
+  margin: 0;
+  max-width: 36em;
+  font-size: 0.8em;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.empty-hint {
+  margin: 0;
+  font-size: 0.9em;
+  color: var(--muted);
+}
+
+/* ---------------- 作业（list：一条条要抄的清单） ---------------- */
+.hw-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85em;
+  padding: 0.45em 0.7em;
+  border-radius: var(--radius-card);
+  background: var(--panel-inner);
+  min-height: 0;
+}
+
+.hw-chip {
+  flex: 0 0 auto;
+  min-width: 3.2em;
+  padding: 0.35em 0.3em;
+  border-radius: 0.35em;
+  background: var(--chip, #4a7d5c);
+  color: #fff;
+  font-size: 0.78em;
+  font-weight: 600;
+  text-align: center;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.hw-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2em;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.hw-item {
+  display: flex;
+  align-items: baseline;
+  gap: 0.45em;
+  font-size: 1em;
+  line-height: 1.32;
+  min-width: 0;
+}
+
+.hw-no {
+  flex: 0 0 auto;
+  font-size: 0.8em;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.hw-text {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.hw-note {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4em;
+  font-size: 0.82em;
+  color: var(--accent);
+  min-width: 0;
+}
+
+.hw-note-tag {
+  flex: 0 0 auto;
+  padding: 0 0.25em;
+  border: 1px solid currentColor;
+  border-radius: 0.22em;
+  font-size: 0.72em;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+.hw-note-text {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* ---------------- 待办（checklist：一条一条勾） ---------------- */
+.todo-item {
+  position: relative;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6em;
+  padding: 0.1em 0 0.1em 0;
+  font-size: 1.04em;
+  line-height: 1.4;
+  min-width: 0;
+}
+
+/* 序号之间那条竖线：把它读成"清单"而不是"几句话" */
+.todo-item + .todo-item::before {
+  content: "";
+  position: absolute;
+  left: 0.72em;
+  top: -0.62em;
+  height: 0.62em;
+  width: 1px;
+  background: color-mix(in srgb, var(--text) 22%, transparent);
+}
+
+.todo-no {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 1.45em;
+  height: 1.45em;
+  min-width: 14px;
+  min-height: 14px;
+  border-radius: 50%;
+  border: 1.5px solid color-mix(in srgb, var(--accent) 70%, transparent);
+  color: var(--accent);
+  font-size: 0.74em;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.todo-text {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* ---------------- 课表（timeline：时间轴） ---------------- */
+.tt {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1em;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* 课表要吃满磁贴的剩余高度（覆盖 .tile-body > * 的 flex:0 0 auto） */
+.tile-body > .tt {
+  flex: 1 1 auto;
+}
+
+.tt-row {
+  display: flex;
+  align-items: center;
+  gap: 0.55em;
+  padding: 0.28em 0.3em;
+  border-radius: 0.3em;
+  min-width: 0;
+  min-height: 0;
+}
+
+.tt-time {
+  flex: 0 0 auto;
+  width: 3.1em;
+  font-size: 0.66em;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
+.tt-dot {
+  flex: 0 0 auto;
+  width: 0.42em;
+  height: 0.42em;
+  min-width: 6px;
+  min-height: 6px;
+  border-radius: 50%;
+  background: var(--chip, #7fbf95);
+}
+
+.tt-subject {
+  flex: 1 1 auto;
+  font-size: 0.98em;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tt-no {
+  flex: 0 0 auto;
+  font-size: 0.62em;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.tt-row.is-empty {
+  opacity: 0.38;
+}
+
+/* 正在上的那一节：整行点亮，左边再补一条金线 */
+.tt-row.is-now {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.tt-row.is-now .tt-time,
+.tt-row.is-now .tt-no {
+  color: var(--accent);
+}
+
+.tt-row.is-now .tt-subject {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.tt-row.is-now .tt-dot {
+  background: var(--accent);
+  box-shadow: 0 0 0 0.22em color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+/* 窄磁贴（≤3 格）不显示时间与节次，只留 圆点 + 科目 */
+.tile[data-size="xs"] .tt-time,
+.tile[data-size="xs"] .tt-no {
+  display: none;
+}
+
+/* 磁贴自己变窄时（老师把它拖小了，或者屏只有 1280）先丢节次、再丢时间，科目名不许被裁 */
+@container (max-width: 300px) {
+  .tt-no {
+    display: none;
+  }
+}
+
+@container (max-width: 240px) {
+  .tt-time {
+    display: none;
+  }
+  .tt-subject {
+    font-size: 0.98em;
+  }
+}
+
+.tt-tip {
+  margin: 0;
+  font-size: 0.78em;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 放假这一天：不摆空课表格子，直说不上课（周末没排课也走这里） */
+.tt-off {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4em;
+  text-align: center;
+}
+
+.tt-off-main {
+  font-size: 1.3em;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.tt-off-sub {
+  font-size: 0.85em;
+  color: var(--muted);
+}
+
+/* ---------------- 通知（announce：一张通知单） ---------------- */
+.note {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45em;
+  flex: 1 1 auto;
+  min-width: 0;
+  padding-left: 0.75em;
+  border-left: 0.16em solid var(--accent);
+}
+
+.tile-body > .note {
+  flex: 1 1 auto;
+}
+
+.note-text {
+  font-size: 1.05em;
+  line-height: 1.5;
+}
+
+.note-sign {
+  margin: 0;
+  align-self: flex-end;
+  font-size: 0.78em;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+/* ---------------- 值日（roster：名单） ---------------- */
+.duty {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5em;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.tile-body > .duty {
+  flex: 1 1 auto;
+}
+
+.duty-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35em;
+}
+
+.duty-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+  padding: 0.24em 0.6em 0.24em 0.45em;
+  border-radius: 1em;
+  background: var(--panel-inner);
+  font-size: 1em;
+  white-space: nowrap;
+}
+
+.duty-dot {
+  width: 0.34em;
+  height: 0.34em;
+  min-width: 5px;
+  min-height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.duty-text {
+  font-size: 1.02em;
+  line-height: 1.5;
+}
+
+.duty-meta {
+  margin: 0;
+  margin-top: auto;
+  align-self: flex-end;
+  font-size: 0.72em;
+  color: var(--muted);
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
+/* ---------------- 点名（spotlight：一个名字） ---------------- */
+.call {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2em;
+  min-height: 0;
+  text-align: center;
+}
+
+.call-kicker {
+  margin: 0;
+  font-size: 0.68em;
+  letter-spacing: 0.22em;
+  color: var(--accent);
+}
+
+.call-name {
+  margin: 0;
+  max-width: 100%;
+  /* 名字按磁贴自己的宽度收：屏幕多宽不算数，磁贴两格宽就得小下来 */
+  font-size: min(var(--call-fs, 3em), 22cqw);
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.call-time {
+  margin: 0;
+  font-size: 0.76em;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+/* ---------------- 倒计时（spotlight：一个数字） ---------------- */
+.cd {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.1em;
+  min-height: 0;
+}
+
+.cd-label {
+  margin: 0;
+  font-size: 0.74em;
+  letter-spacing: 0.14em;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cd-num {
+  display: flex;
+  align-items: baseline;
+  gap: 0.12em;
+  margin: 0;
+}
+
+.cd-days {
+  /* 数字按磁贴宽度算：两格宽的倒计时不许把"71"裁成"7" */
+  font-size: min(4.2em, 34cqw);
+  font-weight: 700;
+  line-height: 0.95;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.cd-unit {
+  font-size: 0.9em;
+  font-weight: 500;
+  color: var(--accent);
+}
+
+.cd-date {
+  margin: 0;
+  font-size: 0.72em;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------------- 寄语（quote：一句写在墙上的话） ---------------- */
+.quote {
+  position: relative;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.35em;
+  min-height: 0;
+  padding-left: 0.55em;
+}
+
+.quote-mark {
+  font-size: 2.6em;
+  line-height: 0.6;
+  color: var(--accent);
+  opacity: 0.5;
+  font-family: Georgia, "Times New Roman", serif;
+}
+
+.quote-text {
+  font-size: 1.3em;
+  line-height: 1.5;
+  letter-spacing: 0.02em;
+}
+
+.quote-sign {
+  margin: 0;
+  font-size: 0.76em;
+  color: var(--muted);
+  text-align: right;
+}
+
+/* ---------------- 滚动文本 ---------------- */
+.scroller {
+  overflow: hidden;
+  min-width: 0;
+  position: relative;
+}
+
+/* 要"读"的整段文字：折行 + 行数钳制，不用横跑（2026-11-03 用户反馈大屏拥挤/文字互压） */
+.clamp {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: var(--lines, 2);
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.scroller-in {
+  display: inline-block;
+  white-space: nowrap;
+  will-change: transform;
+}
+
+/* ---------------- 离线条 ---------------- */
+.link {
+  position: fixed;
+  left: 1.2vw;
+  bottom: 1.2vh;
+  z-index: 30;
+  padding: 0.6vh 1vw;
+  border-radius: 2vw;
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  font-size: 0.95vw;
+  backdrop-filter: blur(4px);
+}
+
+/* ---------------- 配对卡（未绑定时右下角） ---------------- */
+.pair {
+  position: fixed;
+  right: 2.2vw;
+  bottom: 2.4vh;
+  z-index: 40;
+  width: 32vw;
+  min-width: 420px;
+  padding: 1.8vh 1.4vw;
+  border: 1px solid rgba(241, 189, 78, 0.5);
+  border-radius: var(--radius-panel);
+  background: var(--panel);
+  box-shadow: 0 1.2vh 4vh rgba(0, 0, 0, 0.35);
+}
+
+.pair-head {
+  display: flex;
+  align-items: center;
+  gap: 0.6vw;
+  margin-bottom: 1.4vh;
+}
+
+.pair-dot {
+  width: 0.65vw;
+  height: 0.65vw;
+  min-width: 8px;
+  min-height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 0.3vw rgba(241, 189, 78, 0.25);
+}
+
+.pair-title {
+  font-size: 1.15vw;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.pair-body {
+  display: flex;
+  align-items: flex-start;
+  gap: 1.1vw;
+}
+
+.pair-qr {
+  flex: 0 0 auto;
+  width: 9.5vw;
+  height: 9.5vw;
+  min-width: 130px;
+  min-height: 130px;
+  border-radius: 0.4vw;
+  background: #fff;
+}
+
+.pair-info {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.pair-hint,
+.pair-url,
+.pair-or,
+.pair-note {
+  margin: 0 0 0.5vh;
+  font-size: 0.85vw;
+  color: var(--muted);
+  line-height: 1.45;
+  /* 网址可能很长：允许换行，宁可占两行也不许顶出卡片 */
+  overflow-wrap: anywhere;
+}
+
+.pair-url {
+  color: var(--text);
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 0.82vw;
+}
+
+.pair-or {
+  opacity: 0.75;
+}
+
+.pair-code {
+  margin: 0.5vh 0 0.6vh;
+  font-size: 2vw;
+  font-weight: 700;
+  letter-spacing: 0.32vw;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.15;
+  white-space: nowrap;
+}
+
+.screen-code {
+  position: fixed;
+  right: 2.2vw;
+  bottom: 2.4vh;
+  z-index: 25;
+  padding: 0.4vh 0.9vw;
+  border-radius: 1vw;
+  background: rgba(0, 0, 0, 0.28);
+  color: var(--muted);
+  font-size: 0.85vw;
+  letter-spacing: 0.06vw;
+}

@@ -1,0 +1,32 @@
+# 运行时产物
+publish-api/data/
+publish-api/backups/
+host-m0/bin/
+host-m0/obj/
+host-m0/logs/
+**/*.log
+node_modules/
+
+# 部署时的本机数据与密钥
+deploy/.env
+deploy/data/
+deploy/claim-secret.txt
+
+# 桌面壁纸截图与联调证据
+reference/
+
+# 本机生成的密钥控制台（内含种子，只在本机）
+/tools/keygen.local.html
+
+# 本机自用的操作台：整目录不入库（种子、启动器、命令行都在这里）
+# 只忽略仓库根的那个；publish-api/tools/ 是随仓库发布的运维脚本，不能一起忽略
+/tools/
+
+# 开发用探针页（压力数据/假宿主），不入库也不随镜像发布
+board-web/_*.html
+
+# 图标生成物：设计源在 design/，成品已分发到 board-web/、publish-api/public/、host-m0/
+design/out/
+
+# 打包产物：单文件 exe 140 MB、msi 50 MB，都是可重建的
+dist/

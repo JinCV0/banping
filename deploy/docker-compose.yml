@@ -1,0 +1,53 @@
+name: class-board
+
+services:
+  board:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    image: class-board:local
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: 8787
+      DB_PATH: /data/publish.db
+      # 没配种子谁也不能新建班级（服务端会 403），所以这里是必填
+      CLAIM_KEY_SECRET: ${CLAIM_KEY_SECRET:?在 deploy/.env 里填 CLAIM_KEY_SECRET（node publish-api/tools/claim-key.mjs --init 生成）}
+      LICENSE_DAYS: ${LICENSE_DAYS:-365}
+      # 老师端「创建班级」页那句提示，留空不显示
+      INVITE_HINT: ${INVITE_HINT:-}
+    volumes:
+      # 唯一需要备份的目录：SQLite 文件 + WAL
+      - ./data:/data
+    expose:
+      - "8787"
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - node -e "fetch('http://127.0.0.1:8787/api/v1/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    depends_on:
+      - board
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      BOARD_DOMAIN: ${BOARD_DOMAIN:?在 deploy/.env 里填 BOARD_DOMAIN}
+      # 必须填：Caddyfile 的 email 指令空着会启动失败
+      ACME_EMAIL: ${ACME_EMAIL:?在 deploy/.env 里填 ACME_EMAIL}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  caddy_data:
+  caddy_config:
