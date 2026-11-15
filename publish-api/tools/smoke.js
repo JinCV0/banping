@@ -182,9 +182,9 @@ try {
   // 默认必须为空——自建实例不该出现作者的引流文案。
   const serviceDefault = await call(base, "GET", "/api/v1/service");
   check("服务信息默认不带提示文案", serviceDefault.status === 200 && serviceDefault.body.inviteHint === "", serviceDefault.body);
-  await withServer({ inviteHint: "没有开通密钥？联系作者索取" }, async (_app, hintedBase) => {
+  await withServer({ inviteHint: "没有开通密钥？到小红书 26225307944 联系作者获取" }, async (_app, hintedBase) => {
     const hinted = await call(hintedBase, "GET", "/api/v1/service");
-    check("配了 INVITE_HINT 才下发提示", hinted.body.inviteHint.includes("联系作者"), hinted.body);
+    check("配了 INVITE_HINT 才下发提示", hinted.body.inviteHint.includes("联系作者获取"), hinted.body);
   });
 
   // 2. 建班时服务端已经写好"预置内容"：revision=1、v3、带 12 人示例名单

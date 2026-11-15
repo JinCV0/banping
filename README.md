@@ -35,7 +35,7 @@ pwsh -File scripts\build-installer.ps1 -SkipIcons   # 产物在 dist\，附 buil
 装完桌面出现「班屏」，并且**开机自动启动**——教室电脑开机就该看到那块屏，不用人去点。
 
 - 不需要管理员，不需要装 .NET（自包含单文件；WebView2 Runtime 用系统自带的）。
-- 第一次装完打开：默认连 `https://board.hibot.ink`（作者的官方实例，**开新班需要开通密钥**，见下节），右下角出 6 位配对码和二维码，老师手机扫码绑定。
+- 第一次装完打开：默认连 `https://board.hibot.ink`（**作者自己搭的官方实例**；开新班需要开通密钥，到小红书 26225307944 联系作者获取，见下节），右下角出 6 位配对码和二维码，老师手机扫码绑定。
 - 服务架在内网：在 `%LOCALAPPDATA%\班屏\host.json` 写 `{"server": "http://10.0.0.5:8787"}`，或用 `BoardHost.exe --api http://10.0.0.5:8787`。
 - 卸载走「设置 → 应用 → 班屏」。日志在 `%LOCALAPPDATA%\ClassBoard\logs\host.log`。
 
@@ -55,12 +55,13 @@ pwsh -File scripts\build-installer.ps1 -SkipIcons   # 产物在 dist\，附 buil
 
 （也可以 `BoardHost.exe --api https://你的域名`。`host.json` 放在 exe 旁边，也就是安装目录 `%LOCALAPPDATA%\班屏\`。查找顺序：`--url` > `--api` > exe 旁的 `host.json` > 本地 `board-web/` > 默认的官方实例。）
 
-**B. 用作者的官方实例（有限体验）**
+**B. 用作者自己搭的官方实例（有限体验）**
 
-装 Releases 里的 msi，默认就连 `board.hibot.ink`，但建班需要一把**开通密钥**：
+Releases 里的 msi 装好就默认连 `https://board.hibot.ink`——这是**作者自己搭的一台服务器**，不是公共免费服务。
 
-- 在 [Issues](https://github.com/JinCV0/banping/issues) 留言（说明用途 + 要几个班），作者回你密钥；
-- 一把密钥只能建一个班（一钥一班），班的服务期是 **90 天**（建班时写死，到期只拦"发布到大屏"，数据还在），续用找作者换新密钥；
+- 大屏装好后打开，用这个域名在老师端创建班级账号，并把这块大屏绑定到班上；
+- **创建账号要一把开通密钥**：到小红书 **26225307944** 联系作者获取（说明用途 + 要几个班）；
+- 一把密钥只能建一个班（一钥一班），班的服务期 **90 天**（建班时写死，到期只拦"发布到大屏"，数据还在），续用找作者换新密钥；
 - 官方实例的密钥在自建实例上无效，反之亦然（签名种子不同）。
 
 想长期/多班用 → 走 A；只想先看看效果 → 走 B。

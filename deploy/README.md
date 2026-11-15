@@ -25,7 +25,7 @@ mkdir -p /var/lib/class-board && chown -R classboard:classboard /srv/board /var/
 #    HOST=127.0.0.1 PORT=8787 DB_PATH=/var/lib/class-board/publish.db
 #    CLAIM_KEY_SECRET=<本机 node publish-api/tools/claim-key.mjs --init 打印的那串>   ← 开通密钥的种子，没配就谁也不能新建班级
 #    LICENSE_DAYS=365                                                     ← 可选，建班时写进班级的服务期（天）
-#    INVITE_HINT=没有开通密钥？联系作者索取                    ← 可选，老师端"创建班级"页的提示，留空不显示
+#    INVITE_HINT=没有开通密钥？到小红书 26225307944 联系作者获取                    ← 可选，老师端"创建班级"页的提示，留空不显示
 #    建议写成 EnvironmentFile=/etc/class-board.env，改密钥不用动 unit 文件
 systemctl enable --now class-board
 

@@ -245,7 +245,7 @@ node tools/backup.mjs data/publish.db backups/publish-$(date +%F).db
 | `HOST` | `0.0.0.0` | 容器里监听回环地址，平台健康检查连不上（`config.js` 检测到 `RAILWAY_ENVIRONMENT` 会自动兜底，但显式写更稳） |
 | `CLAIM_KEY_SECRET` | 本机 `tools/claim-key.mjs --init` 打印的那串 | 开通密钥的种子；不配就没人能新建班级 |
 | `LICENSE_DAYS` | 可选，默认 `365` | 建班时写进班级的服务期（天） |
-| `INVITE_HINT` | 可选，默认空 | 老师端「创建班级」页开通密钥输入框下面的提示文案（如"没有开通密钥？联系作者索取"）；留空则完全不显示。走 `GET /api/v1/service` 下发，纯文本，不做链接渲染 |
+| `INVITE_HINT` | 可选，默认空 | 老师端「创建班级」页开通密钥输入框下面的提示文案（如"没有开通密钥？到小红书 26225307944 联系作者获取"）；留空则完全不显示。走 `GET /api/v1/service` 下发，纯文本，不做链接渲染 |
 
 `PORT` 由平台注入，不要手填。卷挂到 `/data`（服务 → Volumes → New Volume → Mount path `/data`）。
 
