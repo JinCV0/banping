@@ -26,7 +26,7 @@
 
 ## 装到教室电脑上
 
-从 [Releases](https://github.com/JinCV0/banping/releases) 下 `班屏-<版本>.msi` 双击装。自己打也行（Windows，要 .NET 8 SDK + WiX 5，`pwsh -File scripts\doctor.ps1` 先体检）：
+从 [Releases](https://github.com/JinCV0/banping/releases) 下 `classboard-<版本>.msi` 双击装（自己打出来的叫 `班屏-<版本>.msi`，同一个东西）。自己打也行（Windows，要 .NET 8 SDK + WiX 5，`pwsh -File scripts\doctor.ps1` 先体检）：
 
 ```powershell
 pwsh -File scripts\build-installer.ps1 -SkipIcons   # 产物在 dist\，附 build-info.json 与 sha256
