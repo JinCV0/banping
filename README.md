@@ -43,7 +43,7 @@ pwsh -File scripts\build-installer.ps1 -SkipIcons   # 产物在 dist\，附 buil
 
 ## 别人用这套东西：两条路
 
-`board.hibot.ink` 是作者自己的一台 VPS，**别人不能拿来用**。接手的人只有两条路：
+`board.hibot.ink` 是**作者自己搭的一台服务器**，别人不能拿来用。接手的人只有两条路：
 
 **A. 自己部署服务端（推荐，免费方案也有）**
 
