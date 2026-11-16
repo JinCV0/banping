@@ -107,6 +107,13 @@ a { color: var(--brand); }
 }
 .link:hover { opacity: 1; background: rgba(0, 0, 0, .06); }
 
+/* 大屏端下载：桌面宽度才出现在右上角，手机上不占位 */
+.dl-link { display: none; white-space: nowrap; }
+@media (min-width: 1101px) {
+  .dl-link { display: inline-block; }
+  .login-dl { position: fixed; top: 18px; right: 26px; z-index: 20; }
+}
+
 /* ---------- 分段控件 ---------- */
 
 .seg {
