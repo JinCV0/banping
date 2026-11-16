@@ -153,6 +153,59 @@
     </aside>
   </section>
 
+  <!-- 电脑端滚动教程：一屏一屏往下走，五步从零到能用。手机端不显示（手机上本来就在扫码那条路上）。 -->
+  <section class="guide" id="guide" aria-labelledby="guide-title">
+    <div class="guide-inner">
+      <aside class="guide-rail">
+        <h2 class="guide-title" id="guide-title">从零开始用起来</h2>
+        <ol class="guide-nav">
+          <li><a href="#g1" data-step="g1">大屏打开网址</a></li>
+          <li><a href="#g2" data-step="g2">下载安装并启动「班屏」</a></li>
+          <li><a href="#g3" data-step="g3">手机扫码</a></li>
+          <li><a href="#g4" data-step="g4">创建班级</a></li>
+          <li><a href="#g5" data-step="g5">开始使用</a></li>
+        </ol>
+      </aside>
+
+      <div class="guide-steps">
+        <article class="guide-step" id="g1" data-step="g1">
+          <p class="guide-num">1</p>
+          <h3 class="guide-h">大屏打开网址</h3>
+          <p class="guide-p">在教室那台电脑的浏览器里打开<b>这个网址</b>，右上角能看到「大屏端下载」。</p>
+          <figure class="guide-shot"><img src="guide/1-open.webp" width="1100" height="690" loading="lazy" alt="老师端首页，右上角是「大屏端下载」按钮"></figure>
+        </article>
+
+        <article class="guide-step" id="g2" data-step="g2">
+          <p class="guide-num">2</p>
+          <h3 class="guide-h">下载安装并启动「班屏」</h3>
+          <p class="guide-p">点这个按钮下载<b>安装包</b>，双击装完，从桌面或开始菜单启动「班屏」——它常驻托盘，把桌面壁纸层接过来当大屏。</p>
+          <figure class="guide-shot is-tight"><img src="guide/2-download.webp" width="449" height="201" loading="lazy" alt="页面上「大屏端下载」按钮"></figure>
+        </article>
+
+        <article class="guide-step" id="g3" data-step="g3">
+          <p class="guide-num">3</p>
+          <h3 class="guide-h">手机扫码</h3>
+          <p class="guide-p">还没绑定班级时，大屏右下角会浮出配对卡：手机扫码，或者在大屏上敲那 6 位配对码。</p>
+          <figure class="guide-shot"><img src="guide/3-scan.webp" width="1100" height="688" loading="lazy" alt="大屏右下角的配对卡，含二维码和 6 位配对码"></figure>
+        </article>
+
+        <article class="guide-step" id="g4" data-step="g4">
+          <p class="guide-num">4</p>
+          <h3 class="guide-h">创建班级</h3>
+          <p class="guide-p">手机页面里还没有班级，就点「创建班级」：填班级名称、你的名字、登录密码和开通密钥，建好就自动绑定这块大屏。</p>
+          <figure class="guide-shot is-phone"><img src="guide/4-create.webp" width="560" height="1212" loading="lazy" alt="手机上的创建班级表单"></figure>
+        </article>
+
+        <article class="guide-step" id="g5" data-step="g5">
+          <p class="guide-num">5</p>
+          <h3 class="guide-h">开始使用</h3>
+          <p class="guide-p">之后在老师端录课表、作业和通知，点「保存并发布」，大屏几秒内就同步。</p>
+          <figure class="guide-shot"><img src="guide/5-use.webp" width="1100" height="690" loading="lazy" alt="老师端首页，右侧是大屏实时预览"></figure>
+        </article>
+      </div>
+    </div>
+  </section>
+
   <div class="toast" id="toast" hidden></div>
 
   <!-- 与渲染层共用同一份上限 / 科目 / 主题 / 板块清单，不在这里另抄一套 -->
@@ -181,6 +234,7 @@
   <script src="roster.js"></script>
   <script src="call.js"></script>
   <script src="bind-gate.js"></script>
+  <script src="guide.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
