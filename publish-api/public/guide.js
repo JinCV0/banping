@@ -31,3 +31,21 @@
 
   steps.forEach(function (step) { observer.observe(step); });
 })();
+
+/* 下滑提示：滚起来就淡出；点它直接到教程开头。 */
+(function () {
+  var cue = document.getElementById("scroll-cue");
+  if (!cue) return;
+
+  function sync() {
+    cue.classList.toggle("is-gone", window.scrollY > 40);
+  }
+
+  window.addEventListener("scroll", sync, { passive: true });
+  sync();
+
+  cue.addEventListener("click", function () {
+    var guide = document.getElementById("guide");
+    if (guide) guide.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+})();

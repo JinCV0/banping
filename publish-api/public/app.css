@@ -919,6 +919,46 @@ table.tbl td input[type="time"] { padding: 5px 7px; border-radius: 8px; width: 1
 .msg.is-error { background: #fdf1ef; color: var(--warn); }
 .msg.is-ok { background: #e5f4ec; color: var(--ok); }
 
+/* ---------- 下滑提示（只在电脑端、未登录、还没滚动时出现） ---------- */
+
+.scroll-cue {
+  display: none;
+  position: fixed;
+  left: 50%;
+  bottom: 26px;
+  z-index: 40;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 17px 9px 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .95);
+  box-shadow: 0 8px 22px rgba(31, 45, 38, .10);
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+  transform: translateX(-50%);
+  transition: opacity .35s ease, color .15s, border-color .15s;
+}
+.scroll-cue svg { width: 17px; height: 17px; animation: cue-bob 1.7s ease-in-out infinite; }
+.scroll-cue:hover { color: var(--brand); border-color: #c8d8cc; }
+.scroll-cue.is-gone { opacity: 0; pointer-events: none; }
+
+@keyframes cue-bob {
+  0%, 100% { transform: translateY(-3px); }
+  50% { transform: translateY(4px); }
+}
+
+@media (min-width: 1101px) {
+  .scroll-cue { display: inline-flex; }
+  #app:not([hidden]) ~ .scroll-cue { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scroll-cue svg { animation: none; }
+}
+
 /* ---------- 电脑端滚动教程（挂在登录屏下方；登录之后整页是老师端，就不挂了） ---------- */
 
 .guide { display: none; }
