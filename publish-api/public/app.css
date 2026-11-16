@@ -107,11 +107,29 @@ a { color: var(--brand); }
 }
 .link:hover { opacity: 1; background: rgba(0, 0, 0, .06); }
 
-/* 大屏端下载：桌面宽度才出现在右上角，手机上不占位 */
-.dl-link { display: none; white-space: nowrap; }
+/* 大屏端下载：桌面宽度才出现的按钮，手机上不占位 */
+.dl-btn {
+  display: none;
+  align-items: center;
+  padding: 7px 15px;
+  border-radius: 999px;
+  font-size: 13.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  text-decoration: none;
+  transition: background .15s ease;
+}
+.dl-btn.is-corner {
+  background: var(--brand);
+  color: #fff;
+  box-shadow: 0 6px 18px rgba(47, 96, 73, .28);
+}
+.dl-btn.is-corner:hover { background: #26523d; }
+.dl-btn.is-bar { background: #fff; color: var(--brand); }
+.dl-btn.is-bar:hover { background: #eef5f0; }
 @media (min-width: 1101px) {
-  .dl-link { display: inline-block; }
-  .login-dl { position: fixed; top: 18px; right: 26px; z-index: 20; }
+  .dl-btn { display: inline-flex; }
+  .dl-btn.is-corner { position: fixed; top: 16px; right: 24px; z-index: 20; }
 }
 
 /* ---------- 分段控件 ---------- */

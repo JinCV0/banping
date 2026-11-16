@@ -86,6 +86,8 @@ CI 里两个 workflow：
 
 推 tag 前先确认 tag 与 `version.json` 一致（CI 会卡这一条）。
 
+发完版记得改作者实例上「大屏端下载」按钮的直链：`publish-api/public/index.html` 里两处 `releases/download/vX.Y.Z/classboard-X.Y.Z.msi`，改完重新部署；不改的话按钮还发上一个版本的包。
+
 ## 4. 部署网页服务端（自己部署时）
 
 细节见 `deploy/README.md`。三条铁律：
