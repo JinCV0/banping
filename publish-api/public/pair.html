@@ -33,6 +33,19 @@
           <label class="fld"><span>班主任密码</span><input name="password" type="password" autocomplete="current-password" required placeholder="创建班级时设的密码"></label>
           <button type="submit" class="primary">登录并继续</button>
         </form>
+        <p class="pair-alt"><button type="button" class="link" id="pair-create-toggle">创建班级</button></p>
+      </div>
+
+      <div id="pair-create" hidden>
+        <form class="form" id="pair-create-form">
+          <label class="fld"><span>班级名称</span><input name="className" autocomplete="off" maxlength="20" required placeholder="如 高二(3)班"></label>
+          <label class="fld"><span>我的姓名</span><input name="ownerName" autocomplete="off" maxlength="12" required placeholder="班主任姓名"></label>
+          <label class="fld"><span>设置密码</span><input name="password" type="password" autocomplete="new-password" required minlength="6" placeholder="至少 6 位，之后用它登录"></label>
+          <label class="fld"><span>开通密钥</span><input name="claimKey" autocomplete="off" required placeholder="我们发给你的密钥"></label>
+          <p class="fld-note" id="pair-claim-hint" hidden></p>
+          <button type="submit" class="primary">创建班级并绑定</button>
+          <button type="button" class="link back" data-back>← 返回</button>
+        </form>
       </div>
 
       <div id="pair-confirm" hidden>

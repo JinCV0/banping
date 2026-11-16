@@ -7,6 +7,7 @@
 
   var code = "";
   var owner = null;
+  var createdClassCode = "";
 
   function $(id) { return document.getElementById(id); }
 
@@ -44,6 +45,7 @@
     setHead(title, sub);
     show("pair-code-wrap", false);
     show("pair-login", false);
+    show("pair-create", false);
     show("pair-limit", false);
     show("pair-confirm", false);
     show("pair-done", false);
@@ -57,10 +59,25 @@
     show("pair-code-wrap", true);
     $("pair-code").textContent = code;
     show("pair-login", true);
+    show("pair-create", false);
     show("pair-limit", false);
     show("pair-confirm", false);
     show("pair-done", false);
     $("pair-login-form").elements.classCode.focus();
+  }
+
+  // 还没建班的人被大屏二维码卡在这里：就地建班，建完直接绑，不用回电脑端重来一遍。
+  function viewCreate() {
+    icon("→", false);
+    setHead("创建班级", "配对码 " + code + "：建好之后自动绑定这台大屏。");
+    show("pair-code-wrap", true);
+    $("pair-code").textContent = code;
+    show("pair-login", false);
+    show("pair-create", true);
+    show("pair-limit", false);
+    show("pair-confirm", false);
+    show("pair-done", false);
+    $("pair-create-form").elements.className.focus();
   }
 
   function viewConfirm(user) {
@@ -70,6 +87,7 @@
     show("pair-code-wrap", true);
     $("pair-code").textContent = code;
     show("pair-login", false);
+    show("pair-create", false);
     show("pair-limit", false);
     show("pair-confirm", true);
     show("pair-done", false);
@@ -85,6 +103,7 @@
     );
     show("pair-code-wrap", true);
     show("pair-login", false);
+    show("pair-create", false);
     show("pair-limit", true);
     show("pair-confirm", false);
     show("pair-done", false);
@@ -96,13 +115,15 @@
     setHead("绑定成功", "大屏已经可以显示本班看板了。");
     show("pair-code-wrap", false);
     show("pair-login", false);
+    show("pair-create", false);
     show("pair-limit", false);
     show("pair-confirm", false);
     show("pair-done", true);
     var klass = res && res.className ? res.className : "";
     var screen = res && res.screenCode ? res.screenCode : "";
     message("设备 " + (res && res.deviceId ? String(res.deviceId).slice(0, 8) : "") +
-      (screen ? " · 屏幕码 " + screen : "") + (klass ? " · " + klass : ""), "ok");
+      (screen ? " · 屏幕码 " + screen : "") + (klass ? " · " + klass : "") +
+      (createdClassCode ? " · 班级码 " + createdClassCode : ""), "ok");
   }
 
   async function checkOwner() {
@@ -154,6 +175,37 @@
     }
   }
 
+  // 建班成功就直接绑：这时刚拿到班主任令牌，配对码还没被消费，一把过。
+  async function create(event) {
+    event.preventDefault();
+    var form = event.target;
+    var values = {};
+    Array.prototype.forEach.call(form.elements, function (input) {
+      if (input.name) values[input.name] = String(input.value || "").trim();
+    });
+    message("正在创建班级…");
+    try {
+      var data = await API.request("/api/v1/class/claim", { method: "POST", auth: false, body: values });
+      API.setToken(data.token);
+      owner = data.user;
+      createdClassCode = owner && owner.class ? owner.class.code : "";
+      message("");
+      await bind();
+    } catch (err) {
+      if (err.status === 403 && err.code === "CLAIM_TAKEN") {
+        // 一钥一班：这把密钥已经建过班了，直接回登录并把班级码填好。
+        viewLogin();
+        if (err.details && err.details.classCode) {
+          $("pair-login-form").elements.classCode.value = err.details.classCode;
+          $("pair-login-form").elements.password.focus();
+        }
+        message(err.message || "这把密钥已经建过班级了", "error");
+        return;
+      }
+      message(err.message || "创建班级失败，请重试", "error");
+    }
+  }
+
   async function bind() {
     message("正在绑定…");
     var btn = $("pair-bind");
@@ -181,12 +233,39 @@
     }
   }
 
+  // 官方实例在「创建班级」下面挂一句去哪儿领开通密钥（INVITE_HINT，自建实例留空就什么都不显示）。
+  async function loadServiceInfo() {
+    var hint = $("pair-claim-hint");
+    if (!hint) return;
+    try {
+      var info = await API.request("/api/v1/service", { auth: false });
+      var text = String((info && info.inviteHint) || "").trim();
+      if (!text) return;
+      hint.textContent = text;
+      hint.hidden = false;
+    } catch (err) {
+      /* 附加信息，取不到就算了 */
+    }
+  }
+
   function bindEvents() {
     $("pair-login-form").addEventListener("submit", login);
+    $("pair-create-form").addEventListener("submit", create);
+    $("pair-create-toggle").addEventListener("click", function () {
+      message("");
+      viewCreate();
+    });
+    Array.prototype.forEach.call(document.querySelectorAll("#pair-create [data-back]"), function (btn) {
+      btn.addEventListener("click", function () {
+        message("");
+        viewLogin();
+      });
+    });
     $("pair-bind").addEventListener("click", bind);
     $("pair-switch").addEventListener("click", function () {
       API.setToken("");
       owner = null;
+      createdClassCode = "";
       message("");
       viewLogin();
     });
@@ -200,6 +279,7 @@
 
   function start() {
     bindEvents();
+    loadServiceInfo();
     code = readCode();
     if (!code) {
       fail("链接里没有配对码", "请重新扫大屏上的二维码，或从老师端「班级 → 教室大屏」进入。", "");
