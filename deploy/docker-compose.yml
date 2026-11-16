@@ -17,9 +17,13 @@ services:
       LICENSE_DAYS: ${LICENSE_DAYS:-365}
       # 老师端「创建班级」页那句提示，留空不显示
       INVITE_HINT: ${INVITE_HINT:-}
+      # 大屏端 msi 的存放目录，挂到宿主机 ./downloads 才不会随容器重建丢失
+      DOWNLOAD_DIR: ${DOWNLOAD_DIR:-/data/downloads}
     volumes:
       # 唯一需要备份的目录：SQLite 文件 + WAL
       - ./data:/data
+      # 安装包（可以再备份，丢了重传就行）
+      - ./downloads:/data/downloads
     expose:
       - "8787"
     healthcheck:

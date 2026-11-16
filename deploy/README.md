@@ -13,7 +13,7 @@
 
 ```bash
 # 1. 代码：git archive 打包 + scp 上传到 /srv/board（备份 → 重启 → 健康检查）
-#    重启前先备份 /var/lib/class-board/publish.db 到 backup-<时间>.db（留最近 10 份）——
+#    重启前先 `node publish-api/tools/backup.mjs` 备份到 /var/lib/class-board/backup-<时间>.db（留最近 10 份）——
 #    启动时会把老库的 v1 看板快照就地升级成 v3，没有备份就只能靠每日备份回滚。
 #    或手工：git archive --format=tar -o b.tar HEAD && scp b.tar root@<vps>:/tmp/ && ssh ... 'tar -xf /tmp/b.tar -C /srv/board'
 
@@ -25,9 +25,14 @@ mkdir -p /var/lib/class-board && chown -R classboard:classboard /srv/board /var/
 #    HOST=127.0.0.1 PORT=8787 DB_PATH=/var/lib/class-board/publish.db
 #    CLAIM_KEY_SECRET=<本机 node publish-api/tools/claim-key.mjs --init 打印的那串>   ← 开通密钥的种子，没配就谁也不能新建班级
 #    LICENSE_DAYS=365                                                     ← 可选，建班时写进班级的服务期（天）
-#    INVITE_HINT=没有开通密钥？到小红书 26225307944 联系作者获取                    ← 可选，老师端"创建班级"页的提示，留空不显示
+#    INVITE_HINT=没有开通密钥？到小红书 @你的号 留言联系作者获取            ← 可选，老师端"创建班级"页的提示，留空不显示
+#    DOWNLOAD_DIR=/var/lib/class-board/downloads                          ← 可选，大屏端 msi 放哪（不配=数据库旁边的 downloads/）
 #    建议写成 EnvironmentFile=/etc/class-board.env，改密钥不用动 unit 文件
 systemctl enable --now class-board
+
+# 3b. 大屏端安装包：老师端右上角「大屏端下载」按钮打 /download/<文件名>
+mkdir -p /var/lib/class-board/downloads && chown classboard:classboard /var/lib/class-board/downloads
+scp dist/classboard-<版本>.msi root@<vps>:/var/lib/class-board/downloads/   # 发版后重传一次
 
 # 4. nginx 443 反代（/etc/nginx/conf.d/board.conf）
 #    upstream class_board { server 127.0.0.1:8787; keepalive 8; }

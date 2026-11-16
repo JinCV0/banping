@@ -10,6 +10,7 @@ node_modules/
 # 部署时的本机数据与密钥
 deploy/.env
 deploy/data/
+deploy/downloads/
 deploy/claim-secret.txt
 
 # 桌面壁纸截图与联调证据

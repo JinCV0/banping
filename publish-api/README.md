@@ -82,17 +82,15 @@ node tools/backfill-claim-uid.mjs --db data/publish.db --list uid-list.txt
 两种发法，算法完全一样（都引 `claim.js`）：
 
 ```powershell
-# 图形界面（推荐）：双击就开，种子自动填好
-#   tools\打开密钥控制台.cmd   ← 从 deploy\claim-secret.txt 读种子塞进 URL hash，页面读完存 localStorage 并清掉 hash
-# 也可直接打开 tools\keygen.html：第一次要在页面里粘贴种子、点「保存到本机」
+# 命令行（推荐，随仓库发布，哪台机器都能跑）
+node publish-api/tools/claim-key.mjs --init            # 生成种子：写 deploy/claim-secret.txt（已 gitignore），打印服务器那行
+node publish-api/tools/claim-key.mjs 5                 # 发 5 个
+node publish-api/tools/claim-key.mjs --verify CB-XXXX-XXXX-XXXX-XXXX
 
-# 命令行
-node tools/claim-key.mjs --init            # 生成种子：写 deploy/claim-secret.txt（已 gitignore），打印服务器那行
-node tools/claim-key.mjs 5                 # 发 5 个
-node tools/claim-key.mjs --verify CB-XXXX-XXXX-XXXX-XXXX
+# 图形界面：作者本机自带的 tools\打开密钥控制台.cmd / tools\keygen.html（含种子，不入库、不随仓库发布）
 ```
 
-生成器在本机 `tools/` 下（部署脚本只推 `board-web` 与 `publish-api`，不把它带到服务器）。没配种子时建班返回 403「服务端没有配置开通密钥的种子（CLAIM_KEY_SECRET）」。
+`--init` 发现 `deploy/claim-secret.txt` 已存在会拒绝覆盖——换种子 = 之前发出去的密钥全部作废。没配种子时建班返回 403「服务端没有配置开通密钥的种子（CLAIM_KEY_SECRET）」。
 
 ## 接口
 
@@ -100,6 +98,7 @@ node tools/claim-key.mjs --verify CB-XXXX-XXXX-XXXX-XXXX
 | --- | --- | --- | --- |
 | GET | `/api/v1/health` | 公开 | 探活 |
 | GET | `/api/v1/service` | 公开 | 服务信息：`{inviteHint}`——老师端「创建班级」页那句提示（来自 `INVITE_HINT`，没配就是空串） |
+| GET/HEAD | `/download/<文件名>` | 公开 | 大屏端安装包下载（老师端右上角「大屏端下载」按钮打的就是这里）：从 `DOWNLOAD_DIR` 目录流式发 `msi`/`exe`/`zip`，支持 Range（206）与断点续传；其它后缀、目录穿越、文件不存在一律 404 |
 | POST | `/api/v1/class/claim` | 公开 | 建班（要 `claimKey`）+ 班主任会话，返回 8 位数字班级码；同一把密钥只能建一个班（二次 403） |
 | POST | `/api/v1/class/rename` | owner | 改班级名：body `{name}`（1–20 字）→ `{user}`；改完不用重新发布 |
 | POST | `/api/v1/auth/login` | 公开 | 班主任登录：8 位班级码 + 口令 |
@@ -243,9 +242,10 @@ node tools/backup.mjs data/publish.db backups/publish-$(date +%F).db
 | --- | --- | --- |
 | `DB_PATH` | `/data/publish.db` | 指向挂载卷，否则每次重新部署全班配置蒸发 |
 | `HOST` | `0.0.0.0` | 容器里监听回环地址，平台健康检查连不上（`config.js` 检测到 `RAILWAY_ENVIRONMENT` 会自动兜底，但显式写更稳） |
-| `CLAIM_KEY_SECRET` | 本机 `tools/claim-key.mjs --init` 打印的那串 | 开通密钥的种子；不配就没人能新建班级 |
+| `CLAIM_KEY_SECRET` | 本机 `node publish-api/tools/claim-key.mjs --init` 打印的那串 | 开通密钥的种子；不配就没人能新建班级 |
 | `LICENSE_DAYS` | 可选，默认 `365` | 建班时写进班级的服务期（天） |
-| `INVITE_HINT` | 可选，默认空 | 老师端「创建班级」页开通密钥输入框下面的提示文案（如"没有开通密钥？到小红书 26225307944 联系作者获取"）；留空则完全不显示。走 `GET /api/v1/service` 下发，纯文本，不做链接渲染 |
+| `INVITE_HINT` | 可选，默认空 | 老师端「创建班级」页开通密钥输入框下面的提示文案（如"没有开通密钥？到小红书 26225307944 留言联系作者获取"）；留空则完全不显示。走 `GET /api/v1/service` 下发，纯文本，不做链接渲染 |
+| `DOWNLOAD_DIR` | 可选，默认 `/data/downloads` | 大屏端 msi 放哪；老师端「大屏端下载」按钮打 `/download/<文件名>`。卷要单独挂一个目录，否则容器重建后包没了 |
 
 `PORT` 由平台注入，不要手填。卷挂到 `/data`（服务 → Volumes → New Volume → Mount path `/data`）。
 

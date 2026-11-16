@@ -86,7 +86,9 @@ CI 里两个 workflow：
 
 推 tag 前先确认 tag 与 `version.json` 一致（CI 会卡这一条）。
 
-发完版记得改作者实例上「大屏端下载」按钮的直链：`publish-api/public/index.html` 里两处 `releases/download/vX.Y.Z/classboard-X.Y.Z.msi`，改完重新部署；不改的话按钮还发上一个版本的包。
+发完版记得改作者实例上「大屏端下载」按钮的直链：`publish-api/public/index.html` 里两处 `/download/classboard-X.Y.Z.msi`，改完重新部署；不改的话按钮还发上一个版本的包。
+
+同一个 msi 还要传到服务器自己的目录（`DOWNLOAD_DIR`，默认是数据库文件旁边的 `downloads/`）：`scp classboard-X.Y.Z.msi <user>@<vps>:/var/lib/class-board/downloads/`，再 `chown classboard:classboard`。路由在 `publish-api/downloads.js`：只发 `msi`/`exe`/`zip`、支持 Range（206）、挡目录穿越，文件不存在一律 404——所以别把别的文件扔进这个目录指望能下。
 
 ## 4. 部署网页服务端（自己部署时）
 

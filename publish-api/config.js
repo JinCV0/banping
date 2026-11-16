@@ -16,10 +16,15 @@ function resolveHost(env) {
 }
 
 export function loadConfig(env = process.env) {
+  const dbPath = env.DB_PATH || path.join(HERE, "data", "publish.db");
+  // 内存库（冒烟测试）没有落盘目录，安装包目录就落到 data/ 下
+  const dbDir = dbPath.startsWith(":") ? path.join(HERE, "data") : path.dirname(dbPath);
   return {
     host: resolveHost(env),
     port: Number(env.PORT || 8787),
-    dbPath: env.DB_PATH || path.join(HERE, "data", "publish.db"),
+    dbPath,
+    // 安装包（msi）放在数据库旁边，线上是 /var/lib/class-board/downloads；不进 git，发版时人工上传
+    downloadDir: env.DOWNLOAD_DIR || path.join(dbDir, "downloads"),
     // 开班级密钥的"规律种子"：服务器只存种子，校验 verifyClaimKey()，不存任何发出去的密钥。
     // 没配就谁也不能建班（防止公网被陌生人占号）。
     claimKeySecret: (env.CLAIM_KEY_SECRET || "").trim(),

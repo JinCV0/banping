@@ -6,7 +6,7 @@ import { createClaimKey, verifyClaimKey } from "../claim.js";
 import { openStore } from "../store.js";
 import { upgradeState, upgradeV1ToV2, upgradeV2ToV3, upgradeStoredStates } from "../migrate.js";
 import { loadSchema, validateBoardState } from "../validate.js";
-import { rmSync } from "node:fs";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -182,7 +182,7 @@ try {
   // 默认必须为空——自建实例不该出现作者的引流文案。
   const serviceDefault = await call(base, "GET", "/api/v1/service");
   check("服务信息默认不带提示文案", serviceDefault.status === 200 && serviceDefault.body.inviteHint === "", serviceDefault.body);
-  await withServer({ inviteHint: "没有开通密钥？到小红书 26225307944 联系作者获取" }, async (_app, hintedBase) => {
+  await withServer({ inviteHint: "没有开通密钥？到小红书 26225307944 留言联系作者获取" }, async (_app, hintedBase) => {
     const hinted = await call(hintedBase, "GET", "/api/v1/service");
     check("配了 INVITE_HINT 才下发提示", hinted.body.inviteHint.includes("联系作者获取"), hinted.body);
   });
@@ -709,6 +709,43 @@ try {
 
   const escape = await fetch(`${base}/board/../../package.json`);
   check("目录穿越被挡", escape.status === 404, escape.status);
+
+  // 18b. 安装包下载：/download/<name> 流式发 msi（目录默认在库文件旁边，CI 里换成临时目录）
+  const dlDir = mkdtempSync(join(tmpdir(), "bsp-dl-"));
+  const msiName = "classboard-1.1.3.msi";
+  const msiBytes = Buffer.alloc(2048, 0x4d);
+  writeFileSync(join(dlDir, msiName), msiBytes);
+  await withServer({ downloadDir: dlDir }, async (_app, dlBase) => {
+    const got = await fetch(`${dlBase}/download/${msiName}`);
+    const body = Buffer.from(await got.arrayBuffer());
+    const disposition = got.headers.get("content-disposition") || "";
+    check(
+      "安装包直接下载：200、attachment、长度一致",
+      got.status === 200 && /filename="classboard-1\.1\.3\.msi"/.test(disposition) && body.length === 2048,
+      { status: got.status, bytes: body.length, disposition },
+    );
+
+    const head = await fetch(`${dlBase}/download/${msiName}`, { method: "HEAD" });
+    check("HEAD 只回头不带体（content-length 仍是整份大小）", head.status === 200 && head.headers.get("content-length") === "2048", head.status);
+
+    const ranged = await fetch(`${dlBase}/download/${msiName}`, { headers: { range: "bytes=0-99" } });
+    const partial = Buffer.from(await ranged.arrayBuffer());
+    check(
+      "Range 请求回 206 + content-range（断点续传/边下边装）",
+      ranged.status === 206 && partial.length === 100 && ranged.headers.get("content-range") === "bytes 0-99/2048",
+      { status: ranged.status, bytes: partial.length, cr: ranged.headers.get("content-range") },
+    );
+
+    const missing = await fetch(`${dlBase}/download/classboard-9.9.9.msi`);
+    check("没有的安装包回 404", missing.status === 404, missing.status);
+
+    const traversal = await fetch(`${dlBase}/download/..%2f.env`);
+    check("下载路径不能穿越出目录", traversal.status === 404, traversal.status);
+
+    const notInstaller = await fetch(`${dlBase}/download/publish.db`);
+    check("只发安装包后缀（库文件/其它文件一律 404）", notInstaller.status === 404, notInstaller.status);
+  });
+  rmSync(dlDir, { recursive: true, force: true });
 
   // 19. 一班一屏的老库迁移：同班重复设备在 openStore 时去重，并补上唯一索引
   const legacyPath = join(tmpdir(), `bsp-smoke-legacy-${process.pid}.db`);

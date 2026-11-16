@@ -6,6 +6,7 @@ import { loadSchema } from "./validate.js";
 import { createEventHub } from "./events.js";
 import { createRouter } from "./http.js";
 import { createStaticHandler } from "./static.js";
+import { createDownloadHandler } from "./downloads.js";
 import { authRoutes } from "./routes-auth.js";
 import { boardRoutes } from "./routes-board.js";
 import { teacherRoutes } from "./routes-teachers.js";
@@ -38,9 +39,11 @@ export function createServer(overrides = {}) {
   ];
   const handle = createRouter({ routes, store, config, events });
   const serve = createStaticHandler(overrides.staticOptions);
+  const serveDownload = createDownloadHandler({ dir: config.downloadDir });
 
   const server = http.createServer(async (req, res) => {
     try {
+      if (await serveDownload(req, res)) return; // /download/*.msi 安装包
       if (await serve(req, res)) return; // h5 与 /board/ 静态资源
       await handle(req, res);
     } catch (error) {
